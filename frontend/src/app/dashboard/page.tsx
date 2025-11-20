@@ -109,7 +109,7 @@ export default function DashboardPage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
             Dashboard
           </h1>
-          <p className="text-gray-600">Welcome back! Here's your audit overview</p>
+          <p className="text-gray-600">Welcome back! Here&apos;s your audit overview</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

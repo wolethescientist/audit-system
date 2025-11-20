@@ -32,6 +32,7 @@ export default function WorkflowDetailPage() {
   useEffect(() => {
     fetchWorkflowData();
     fetchCurrentUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
 
   const fetchCurrentUser = async () => {

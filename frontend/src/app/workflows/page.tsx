@@ -15,6 +15,7 @@ export default function WorkflowsPage() {
 
   useEffect(() => {
     fetchWorkflows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const fetchWorkflows = async () => {
