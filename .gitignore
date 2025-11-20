@@ -1,0 +1,19 @@
+# Backend
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.env
+backend/alembic/versions/*.py
+!backend/alembic/versions/__init__.py
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/out/
+
+# General
+.DS_Store
+*.log
+.vscode/
+.idea/
