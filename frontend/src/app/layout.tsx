@@ -1,24 +1,36 @@
-import type { Metadata } from 'next';
+'use client';
+
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { usePathname } from 'next/navigation';
+import Sidebar from '@/components/Sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-  title: 'Audit Management System',
-  description: 'Enterprise audit workflow digitization platform',
-};
 
 export default function RootLayout({
   children,
 }: {
   children: any;
 }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/login' || pathname === '/';
+
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {isLoginPage ? (
+            children
+          ) : (
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="flex-1 bg-gray-50">
+                {children}
+              </main>
+            </div>
+          )}
+        </Providers>
       </body>
     </html>
   );
