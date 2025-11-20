@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { AnalyticsOverview } from '@/lib/types';
-import Sidebar from '@/components/Sidebar';
 
 export default function DashboardPage() {
   const { data: analytics, isLoading } = useQuery<AnalyticsOverview>({
@@ -16,13 +15,10 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex">
-        <Sidebar />
-        <div className="flex-1 p-8 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
-            <p className="text-gray-600 font-medium">Loading dashboard...</p>
-          </div>
+      <div className="p-8 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -102,9 +98,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1 p-8">
+    <div className="p-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
             Dashboard
@@ -168,6 +162,5 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
