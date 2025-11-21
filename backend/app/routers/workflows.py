@@ -84,13 +84,15 @@ def list_workflows(
 ):
     """List workflows visible to current user (created by them or assigned to them in ANY step)"""
     
+    # Build filter conditions
+    filter_conditions = [WorkflowStep.assigned_to_id == current_user.id]
+    if current_user.department_id:
+        filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
+    
     # Get workflow IDs where user is assigned in ANY step (not just active ones)
     # This allows all assigned staff to see the workflow from the beginning
     assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
-        or_(
-            WorkflowStep.assigned_to_id == current_user.id,
-            WorkflowStep.department_id == current_user.department_id
-        )
+        or_(*filter_conditions)
     ).distinct().all()
     assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
     
@@ -98,7 +100,7 @@ def list_workflows(
     query = db.query(Workflow).filter(
         or_(
             Workflow.created_by_id == current_user.id,
-            Workflow.id.in_(assigned_workflow_ids)
+            Workflow.id.in_(assigned_workflow_ids) if assigned_workflow_ids else False
         )
     )
     
@@ -125,12 +127,16 @@ def get_workflow(
     # Check if user has access (creator or assigned in any step)
     has_access = workflow.created_by_id == current_user.id
     if not has_access:
-        assigned_step = db.query(WorkflowStep).filter(
+        # Build filter conditions
+        filter_conditions = [
             WorkflowStep.workflow_id == workflow_id,
-            or_(
-                WorkflowStep.assigned_to_id == current_user.id,
-                WorkflowStep.department_id == current_user.department_id
-            )
+            WorkflowStep.assigned_to_id == current_user.id
+        ]
+        if current_user.department_id:
+            filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
+        
+        assigned_step = db.query(WorkflowStep).filter(
+            or_(*filter_conditions)
         ).first()
         has_access = assigned_step is not None
     
@@ -299,16 +305,25 @@ def get_my_pending_workflows(
 ):
     """Get workflows where I need to take action NOW (my step is currently active)"""
     
+    # Build filter conditions
+    filter_conditions = [
+        WorkflowStep.status == WorkflowStatus.IN_PROGRESS,
+        WorkflowStep.assigned_to_id == current_user.id
+    ]
+    if current_user.department_id:
+        filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
+    
     # Find steps assigned to me or my department that are in progress
     pending_steps = db.query(WorkflowStep).filter(
-        WorkflowStep.status == WorkflowStatus.IN_PROGRESS
-    ).filter(
-        (WorkflowStep.assigned_to_id == current_user.id) |
-        (WorkflowStep.department_id == current_user.department_id)
+        or_(*filter_conditions)
     ).all()
     
     # Get unique workflows
     workflow_ids = list(set([step.workflow_id for step in pending_steps]))
+    
+    if not workflow_ids:
+        return []
+    
     workflows = db.query(Workflow).filter(Workflow.id.in_(workflow_ids)).all()
     
     return workflows
@@ -320,18 +335,32 @@ def get_my_workflows(
 ):
     """Get all workflows where I'm assigned to any step (for visibility)"""
     
-    # Get workflow IDs where user is assigned in ANY step
-    assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
-        or_(
-            WorkflowStep.assigned_to_id == current_user.id,
-            WorkflowStep.department_id == current_user.department_id
-        )
-    ).distinct().all()
-    assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
-    
-    # Get all workflows where user is assigned
-    workflows = db.query(Workflow).filter(
-        Workflow.id.in_(assigned_workflow_ids)
-    ).order_by(Workflow.created_at.desc()).all()
-    
-    return workflows
+    try:
+        # Build filter conditions
+        filter_conditions = [WorkflowStep.assigned_to_id == current_user.id]
+        
+        # Only add department filter if user has a department
+        if current_user.department_id:
+            filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
+        
+        # Get workflow IDs where user is assigned in ANY step
+        assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
+            or_(*filter_conditions)
+        ).distinct().all()
+        assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
+        
+        # If no workflows assigned, return empty list
+        if not assigned_workflow_ids:
+            return []
+        
+        # Get all workflows where user is assigned
+        workflows = db.query(Workflow).filter(
+            Workflow.id.in_(assigned_workflow_ids)
+        ).order_by(Workflow.created_at.desc()).all()
+        
+        return workflows
+    except Exception as e:
+        print(f"Error in get_my_workflows: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching workflows: {str(e)}")
