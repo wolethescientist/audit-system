@@ -283,6 +283,7 @@ class WorkflowCreate(BaseModel):
 
 class WorkflowResponse(BaseModel):
     id: UUID
+    reference_number: str
     audit_id: UUID
     name: str
     description: Optional[str]

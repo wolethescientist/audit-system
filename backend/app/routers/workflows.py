@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List
 from uuid import UUID
 from datetime import datetime
+import random
+import string
 
 from app.database import get_db
 from app.auth import get_current_user
@@ -17,6 +20,12 @@ from app.schemas import (
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
+def generate_reference_number():
+    """Generate a unique workflow reference number like WF-2024-XXXXX"""
+    year = datetime.utcnow().year
+    random_part = ''.join(random.choices(string.digits, k=5))
+    return f"WF-{year}-{random_part}"
+
 @router.post("/", response_model=WorkflowResponse)
 def create_workflow(
     workflow_data: WorkflowCreate,
@@ -30,8 +39,14 @@ def create_workflow(
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found")
     
+    # Generate unique reference number
+    reference_number = generate_reference_number()
+    while db.query(Workflow).filter(Workflow.reference_number == reference_number).first():
+        reference_number = generate_reference_number()
+    
     # Create workflow
     workflow = Workflow(
+        reference_number=reference_number,
         audit_id=workflow_data.audit_id,
         name=workflow_data.name,
         description=workflow_data.description,
@@ -67,8 +82,24 @@ def list_workflows(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all workflows with optional filters"""
-    query = db.query(Workflow)
+    """List workflows visible to current user (created by them or assigned to them)"""
+    
+    # Get workflow IDs where user is assigned in any step
+    assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
+        or_(
+            WorkflowStep.assigned_to_id == current_user.id,
+            WorkflowStep.department_id == current_user.department_id
+        )
+    ).distinct().all()
+    assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
+    
+    # Query workflows created by user or assigned to user
+    query = db.query(Workflow).filter(
+        or_(
+            Workflow.created_by_id == current_user.id,
+            Workflow.id.in_(assigned_workflow_ids)
+        )
+    )
     
     if audit_id:
         query = query.filter(Workflow.audit_id == audit_id)
@@ -85,10 +116,25 @@ def get_workflow(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get workflow details with all steps"""
+    """Get workflow details with all steps - only if user has access"""
     workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    # Check if user has access (creator or assigned in any step)
+    has_access = workflow.created_by_id == current_user.id
+    if not has_access:
+        assigned_step = db.query(WorkflowStep).filter(
+            WorkflowStep.workflow_id == workflow_id,
+            or_(
+                WorkflowStep.assigned_to_id == current_user.id,
+                WorkflowStep.department_id == current_user.department_id
+            )
+        ).first()
+        has_access = assigned_step is not None
+    
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have access to this workflow")
     
     return workflow
 
@@ -146,7 +192,7 @@ def approve_workflow_step(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Approve, reject, or sign a workflow step"""
+    """Process workflow step action (approve, reject, sign, review, acknowledge)"""
     
     # Get workflow and step
     workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
@@ -164,21 +210,34 @@ def approve_workflow_step(
     # Verify user has permission (assigned user or department member)
     if step.assigned_to_id and step.assigned_to_id != current_user.id:
         if current_user.department_id != step.department_id:
-            raise HTTPException(status_code=403, detail="Not authorized to approve this step")
+            raise HTTPException(status_code=403, detail="Not authorized to act on this step")
+    
+    # Validate action matches step requirement
+    action = approval_data.action
+    if step.action_required == "review" and action not in ["reviewed", "rejected"]:
+        raise HTTPException(status_code=400, detail="This step requires review action")
+    if step.action_required == "acknowledge" and action not in ["acknowledged", "rejected"]:
+        raise HTTPException(status_code=400, detail="This step requires acknowledge action")
+    if step.action_required == "sign" and action not in ["signed", "rejected"]:
+        raise HTTPException(status_code=400, detail="This step requires signature")
+        
+    # For sign action, require signature data
+    if action == "signed" and not approval_data.signature_data:
+        raise HTTPException(status_code=400, detail="Signature data is required for signing")
     
     # Create approval record
     approval = WorkflowApproval(
         workflow_step_id=step_id,
         user_id=current_user.id,
-        action=ApprovalAction(approval_data.action),
+        action=ApprovalAction(action),
         comments=approval_data.comments,
         signature_data=approval_data.signature_data,
         ip_address=request.client.host if request.client else None
     )
     db.add(approval)
     
-    # Update step status
-    if approval_data.action == "approved" or approval_data.action == "signed":
+    # Update step status based on action
+    if action in ["approved", "signed", "reviewed", "acknowledged"]:
         step.status = WorkflowStatus.APPROVED
         step.completed_at = datetime.utcnow()
         
@@ -198,10 +257,20 @@ def approve_workflow_step(
             workflow.status = WorkflowStatus.COMPLETED
             workflow.completed_at = datetime.utcnow()
     
-    elif approval_data.action == "rejected":
+    elif action == "rejected":
+        # Rejection ends the workflow immediately
         step.status = WorkflowStatus.REJECTED
         step.completed_at = datetime.utcnow()
         workflow.status = WorkflowStatus.REJECTED
+        workflow.completed_at = datetime.utcnow()
+        
+        # Mark all remaining steps as cancelled
+        remaining_steps = db.query(WorkflowStep).filter(
+            WorkflowStep.workflow_id == workflow_id,
+            WorkflowStep.step_order > step.step_order
+        ).all()
+        for remaining_step in remaining_steps:
+            remaining_step.status = WorkflowStatus.REJECTED
     
     db.commit()
     db.refresh(approval)

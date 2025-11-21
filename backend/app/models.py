@@ -191,6 +191,7 @@ class Workflow(Base):
     __tablename__ = "workflows"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    reference_number = Column(String, unique=True, nullable=False, index=True)
     audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(Text)
@@ -229,6 +230,8 @@ class ApprovalAction(str, enum.Enum):
     REJECTED = "rejected"
     RETURNED = "returned"
     SIGNED = "signed"
+    REVIEWED = "reviewed"
+    ACKNOWLEDGED = "acknowledged"
 
 class WorkflowApproval(Base):
     __tablename__ = "workflow_approvals"
