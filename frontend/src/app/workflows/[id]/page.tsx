@@ -31,6 +31,7 @@ export default function WorkflowDetailPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchWorkflowData();
@@ -143,7 +144,7 @@ export default function WorkflowDetailPage() {
   };
 
   const handleApproval = async () => {
-    if (!selectedStep) return;
+    if (!selectedStep || isSubmitting) return;
 
     // Validate signature if required
     if (approvalAction === 'signed' && canvasRef.current) {
@@ -158,6 +159,8 @@ export default function WorkflowDetailPage() {
         }
       }
     }
+
+    setIsSubmitting(true);
 
     try {
       const token = localStorage.getItem('token');
@@ -209,6 +212,8 @@ export default function WorkflowDetailPage() {
       const errorMessage = error.response?.data?.detail || 'Failed to submit action';
       alert(`❌ Error: ${errorMessage}`);
       console.error('Approval error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -729,13 +734,33 @@ export default function WorkflowDetailPage() {
             <div className="flex gap-4">
               <button
                 onClick={handleApproval}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                disabled={isSubmitting}
+                className={`px-6 py-2 rounded-lg font-medium ${
+                  isSubmitting
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Submit
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Submitting...
+                  </span>
+                ) : (
+                  'Submit'
+                )}
               </button>
               <button
                 onClick={() => setShowApprovalModal(false)}
-                className="bg-gray-200 px-6 py-2 rounded-lg hover:bg-gray-300"
+                disabled={isSubmitting}
+                className={`px-6 py-2 rounded-lg ${
+                  isSubmitting
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 hover:bg-gray-300'
+                }`}
               >
                 Cancel
               </button>
