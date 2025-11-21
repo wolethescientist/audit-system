@@ -313,7 +313,7 @@ def get_my_pending_workflows(
     
     return workflows
 
-@router.get("/my-workflows", response_model=List[WorkflowDetailResponse])
+@router.get("/my-workflows", response_model=List[WorkflowResponse])
 def get_my_workflows(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)

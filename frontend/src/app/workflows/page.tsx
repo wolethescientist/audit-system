@@ -141,8 +141,12 @@ export default function WorkflowsPage() {
       });
       
       setTasks(tasksData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching tasks:', error);
+      console.error('Error detail:', error.response?.data);
+      if (error.response?.status === 422) {
+        console.error('Validation error - endpoint may not exist or has wrong parameters');
+      }
     } finally {
       setLoading(false);
     }
