@@ -21,8 +21,12 @@ export default function MyTasksPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchMyTasks();
+    const initializePage = async () => {
+      await fetchCurrentUser();
+      await fetchMyTasks();
+    };
+    
+    initializePage();
     
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
@@ -49,6 +53,21 @@ export default function MyTasksPage() {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
+      // First ensure we have current user data
+      let user = currentUser;
+      if (!user) {
+        const userResponse = await axios.get(`${API_URL}/auth/validate`, { headers });
+        user = userResponse.data;
+        setCurrentUser(user);
+      }
+
+      if (!user) {
+        console.error('Unable to fetch current user');
+        return;
+      }
+
+      console.log(`Fetching workflows for user: ${user.full_name}`);
+
       // Get all workflows where I'm assigned (not just active ones)
       const response = await axios.get(`${API_URL}/workflows/my-workflows`, { headers });
       
@@ -65,7 +84,7 @@ export default function MyTasksPage() {
         
         // Find my step (the one assigned to me)
         const myStep = stepsRes.data.find((step: WorkflowStep) => 
-          step.assigned_to_id === currentUser?.id || step.department_id === currentUser?.department_id
+          step.assigned_to_id === user.id || step.department_id === user.department_id
         );
         
         if (myStep) {
