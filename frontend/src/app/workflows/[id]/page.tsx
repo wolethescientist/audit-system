@@ -29,6 +29,8 @@ export default function WorkflowDetailPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchWorkflowData();
@@ -42,6 +44,24 @@ export default function WorkflowDetailPage() {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workflowId]);
+
+  // Check URL parameters to auto-open action modal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const shouldOpenAction = searchParams.get('action') === 'true';
+      const stepId = searchParams.get('stepId');
+      
+      if (shouldOpenAction && stepId && steps.length > 0) {
+        const step = steps.find(s => s.id === stepId);
+        if (step && canApproveStep(step)) {
+          openApprovalModal(step);
+          // Clean up URL
+          window.history.replaceState({}, '', `/workflows/${workflowId}`);
+        }
+      }
+    }
+  }, [steps, workflowId]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -125,6 +145,20 @@ export default function WorkflowDetailPage() {
   const handleApproval = async () => {
     if (!selectedStep) return;
 
+    // Validate signature if required
+    if (approvalAction === 'signed' && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasSignature = imageData.data.some((channel) => channel !== 0);
+        if (!hasSignature) {
+          alert('Please provide a signature before submitting.');
+          return;
+        }
+      }
+    }
+
     try {
       const token = localStorage.getItem('token');
       
@@ -143,11 +177,38 @@ export default function WorkflowDetailPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('Action submitted successfully!');
+      // Success feedback
+      const actionText = approvalAction === 'approved' ? 'approved' :
+                        approvalAction === 'signed' ? 'signed' :
+                        approvalAction === 'reviewed' ? 'reviewed' :
+                        approvalAction === 'acknowledged' ? 'acknowledged' :
+                        approvalAction === 'rejected' ? 'rejected' : 'processed';
+      
+      setSuccessMessage(`Step ${actionText} successfully! The workflow has been updated.`);
+      setShowSuccessBanner(true);
       setShowApprovalModal(false);
-      fetchWorkflowData();
+      
+      // Hide success banner after 5 seconds
+      setTimeout(() => {
+        setShowSuccessBanner(false);
+      }, 5000);
+      
+      // Reset form
+      setApprovalComments('');
+      setSignatureData('');
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+      
+      // Refresh data
+      await fetchWorkflowData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Failed to submit action');
+      const errorMessage = error.response?.data?.detail || 'Failed to submit action';
+      alert(`❌ Error: ${errorMessage}`);
+      console.error('Approval error:', error);
     }
   };
 
@@ -240,6 +301,25 @@ export default function WorkflowDetailPage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
+      {/* Success Banner */}
+      {showSuccessBanner && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-slide-in-right">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">✅</span>
+            <div>
+              <p className="font-bold">Success!</p>
+              <p>{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setShowSuccessBanner(false)}
+              className="ml-4 text-white hover:text-gray-200"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Reference Number - Prominent Display */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 mb-6 shadow-lg">
         <div className="flex items-center justify-between">
