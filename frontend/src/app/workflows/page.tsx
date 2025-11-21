@@ -129,7 +129,12 @@ export default function WorkflowsPage() {
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-2">{workflow.name}</h3>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold">{workflow.name}</h3>
+                      <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                        {workflow.reference_number}
+                      </span>
+                    </div>
                     {workflow.description && (
                       <p className="text-gray-600 mb-3">{workflow.description}</p>
                     )}

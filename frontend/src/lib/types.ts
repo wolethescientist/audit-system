@@ -109,6 +109,8 @@ export enum ApprovalAction {
   REJECTED = 'rejected',
   RETURNED = 'returned',
   SIGNED = 'signed',
+  REVIEWED = 'reviewed',
+  ACKNOWLEDGED = 'acknowledged',
 }
 
 export interface WorkflowStep {
@@ -127,6 +129,7 @@ export interface WorkflowStep {
 
 export interface Workflow {
   id: string;
+  reference_number: string;
   audit_id: string;
   name: string;
   description?: string;

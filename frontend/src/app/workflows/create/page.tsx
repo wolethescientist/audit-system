@@ -20,6 +20,8 @@ export default function CreateWorkflowPage() {
     description: '',
   });
 
+  const [referenceNumber, setReferenceNumber] = useState<string>('');
+
   const [steps, setSteps] = useState<WorkflowStepCreate[]>([
     {
       step_order: 1,
@@ -32,6 +34,9 @@ export default function CreateWorkflowPage() {
 
   useEffect(() => {
     fetchData();
+    // Show preview of what reference number will look like
+    const year = new Date().getFullYear();
+    setReferenceNumber(`WF-${year}-XXXXX (Will be auto-generated)`);
   }, []);
 
   const fetchData = async () => {
@@ -101,7 +106,7 @@ export default function CreateWorkflowPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      alert('Workflow created successfully!');
+      alert(`Workflow created successfully!\nReference Number: ${response.data.reference_number}`);
       router.push(`/workflows/${response.data.id}`);
     } catch (error: any) {
       console.error('Error creating workflow:', error);
@@ -116,6 +121,25 @@ export default function CreateWorkflowPage() {
       <h1 className="text-3xl font-bold mb-6">Create Workflow</h1>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
+        {/* Reference Number - Immutable */}
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+          <label className="block text-sm font-medium text-blue-900 mb-2">
+            Workflow Reference Number (Auto-generated)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={referenceNumber}
+              readOnly
+              className="flex-1 bg-white border-2 border-blue-300 rounded-lg px-4 py-3 font-mono text-lg font-bold text-blue-900 cursor-not-allowed"
+            />
+            <span className="text-sm text-blue-700 italic">Immutable</span>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">
+            This reference number will be used to track this workflow throughout its lifecycle.
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-2">Audit</label>
           <select
