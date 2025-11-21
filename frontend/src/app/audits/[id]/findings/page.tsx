@@ -43,7 +43,7 @@ export default function FindingsPage() {
           ← Back to Audits
         </Link>
         <h1 className="text-3xl font-bold">{audit?.title || 'Loading...'}</h1>
-        <p className="text-gray-600 mt-2">Audit ID: {audit?.audit_id}</p>
+        <p className="text-gray-600 mt-2">Audit ID: {audit?.id}</p>
       </div>
 
       <div className="border-b border-gray-200 mb-6">
@@ -84,10 +84,11 @@ export default function FindingsPage() {
                     {finding.severity}
                   </span>
                 </div>
-                <p className="text-gray-700 mb-2">{finding.description}</p>
-                <div className="text-sm text-gray-600">
-                  <p><strong>Impact:</strong> {finding.impact}</p>
-                  <p><strong>Recommendation:</strong> {finding.recommendation}</p>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {finding.impact && <p><strong>Impact:</strong> {finding.impact}</p>}
+                  {finding.root_cause && <p><strong>Root Cause:</strong> {finding.root_cause}</p>}
+                  {finding.recommendation && <p><strong>Recommendation:</strong> {finding.recommendation}</p>}
+                  {finding.response_from_auditee && <p><strong>Response:</strong> {finding.response_from_auditee}</p>}
                 </div>
               </div>
             ))}

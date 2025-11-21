@@ -35,7 +35,7 @@ export default function WorkProgramPage() {
           ← Back to Audits
         </Link>
         <h1 className="text-3xl font-bold">{audit?.title || 'Loading...'}</h1>
-        <p className="text-gray-600 mt-2">Audit ID: {audit?.audit_id}</p>
+        <p className="text-gray-600 mt-2">Audit ID: {audit?.id}</p>
       </div>
 
       <div className="border-b border-gray-200 mb-6">
