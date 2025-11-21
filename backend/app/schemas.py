@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
-from app.models import UserRole, AuditStatus, ReportStatus, FindingSeverity
+from app.models import UserRole, AuditStatus, ReportStatus, FindingSeverity, WorkflowStatus, ApprovalAction
 
 # Auth Schemas
 class Token(BaseModel):
@@ -264,12 +264,12 @@ class WorkflowStepResponse(BaseModel):
     workflow_id: UUID
     step_order: int
     department_id: UUID
-    assigned_to_id: Optional[UUID]
-    action_required: str
-    status: str
-    due_date: Optional[datetime]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    assigned_to_id: Optional[UUID] = None
+    action_required: str = "review_and_approve"
+    status: WorkflowStatus
+    due_date: Optional[datetime] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
     created_at: datetime
     
     class Config:
@@ -287,12 +287,12 @@ class WorkflowResponse(BaseModel):
     reference_number: str
     audit_id: UUID
     name: str
-    description: Optional[str]
-    created_by_id: Optional[UUID]
-    status: str
-    current_step: int
+    description: Optional[str] = None
+    created_by_id: Optional[UUID] = None
+    status: WorkflowStatus
+    current_step: int = 0
     created_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -315,7 +315,7 @@ class ApprovalResponse(BaseModel):
     id: UUID
     workflow_step_id: UUID
     user_id: UUID
-    action: str
+    action: ApprovalAction
     comments: Optional[str]
     signature_data: Optional[str]
     ip_address: Optional[str]
@@ -323,3 +323,4 @@ class ApprovalResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        use_enum_values = True
