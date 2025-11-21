@@ -63,13 +63,16 @@ export default function MyTasksPage() {
 
       if (!user) {
         console.error('Unable to fetch current user');
+        setLoading(false);
         return;
       }
 
-      console.log(`Fetching workflows for user: ${user.full_name}`);
+      console.log(`Fetching workflows for user: ${user.full_name} (ID: ${user.id})`);
 
       // Get all workflows where I'm assigned (not just active ones)
       const response = await axios.get(`${API_URL}/workflows/my-workflows`, { headers });
+      
+      console.log(`Found ${response.data.length} workflows assigned to me`);
       
       // For each workflow, get the steps and find MY step
       const tasksData: PendingTask[] = [];
@@ -80,32 +83,36 @@ export default function MyTasksPage() {
           continue;
         }
 
-        const stepsRes = await axios.get(`${API_URL}/workflows/${workflow.id}/steps`, { headers });
-        
-        // Find my step (the one assigned to me)
-        const myStep = stepsRes.data.find((step: WorkflowStep) => 
-          step.assigned_to_id === user.id || step.department_id === user.department_id
-        );
-        
-        if (myStep) {
-          // Get audit details
-          let auditTitle = 'Unknown Audit';
-          try {
-            const auditRes = await axios.get(`${API_URL}/audits/${workflow.audit_id}`, { headers });
-            auditTitle = auditRes.data.title;
-          } catch (error) {
-            console.error('Error fetching audit:', error);
+        try {
+          const stepsRes = await axios.get(`${API_URL}/workflows/${workflow.id}/steps`, { headers });
+          
+          // Find my step (the one assigned to me)
+          const myStep = stepsRes.data.find((step: WorkflowStep) => 
+            step.assigned_to_id === user.id || step.department_id === user.department_id
+          );
+          
+          if (myStep) {
+            // Get audit details
+            let auditTitle = 'Unknown Audit';
+            try {
+              const auditRes = await axios.get(`${API_URL}/audits/${workflow.audit_id}`, { headers });
+              auditTitle = auditRes.data.title;
+            } catch (error) {
+              console.error('Error fetching audit:', error);
+            }
+
+            // Check if it's my turn (my step is in progress)
+            const isMyTurn = myStep.status === 'in_progress';
+
+            tasksData.push({
+              workflow,
+              step: myStep,
+              audit_title: auditTitle,
+              isMyTurn,
+            });
           }
-
-          // Check if it's my turn (my step is in progress)
-          const isMyTurn = myStep.status === 'in_progress';
-
-          tasksData.push({
-            workflow,
-            step: myStep,
-            audit_title: auditTitle,
-            isMyTurn,
-          });
+        } catch (stepError) {
+          console.error(`Error fetching steps for workflow ${workflow.id}:`, stepError);
         }
       }
       
@@ -116,9 +123,12 @@ export default function MyTasksPage() {
         return a.step.step_order - b.step.step_order;
       });
       
+      console.log(`Processed ${tasksData.length} tasks`);
       setTasks(tasksData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching tasks:', error);
+      console.error('Error detail:', error.response?.data);
+      console.error('Error status:', error.response?.status);
     } finally {
       setLoading(false);
     }
