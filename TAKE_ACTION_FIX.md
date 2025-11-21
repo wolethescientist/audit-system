@@ -3,7 +3,7 @@
 ## Problem
 When users clicked "Take Action Now" from the My Tasks page, it only redirected them to the workflow detail page without allowing them to immediately perform the action. Users had to manually click another button to open the action modal.
 
-## Solution Implemented
+## Solution Implemented (Updated with Debugging)
 
 ### 1. My Tasks Page (`frontend/src/app/my-tasks/page.tsx`)
 - Updated the "Take Action Now" button to pass URL parameters (`action=true` and `stepId`) when navigating to the workflow detail page
@@ -64,5 +64,30 @@ The backend workflow approval endpoint (`/workflows/{workflow_id}/steps/{step_id
 
 ## Files Modified
 
-1. `frontend/src/app/my-tasks/page.tsx` - Updated button to pass URL parameters
-2. `frontend/src/app/workflows/[id]/page.tsx` - Added auto-open modal logic and enhanced feedback
+1. `frontend/src/app/my-tasks/page.tsx` - Updated button to pass URL parameters with console logging
+2. `frontend/src/app/workflows/[id]/page.tsx` - Added auto-open modal logic with:
+   - useSearchParams hook for proper Next.js URL parameter handling
+   - useRef to track if auto-open was attempted (prevents multiple attempts)
+   - Console logging for debugging
+   - Checks for all required data (steps, currentUser, not loading)
+   - 200ms delay to ensure rendering is complete
+
+## Debugging
+
+If the modal doesn't open automatically:
+
+1. **Open browser console (F12)**
+2. **Click "Take Action Now"** from My Tasks
+3. **Check console logs** - you should see:
+   - "Navigating to: /workflows/[id]?action=true&stepId=[id]"
+   - "Auto-open check: { shouldOpenAction: true, ... }"
+   - "Found step: { ... }"
+   - "Can approve step: true"
+   - "Auto-opening action modal for step: X"
+
+4. **Common Issues:**
+   - If `stepsLoaded: 0` - data hasn't loaded yet (should retry when data loads)
+   - If `currentUser: false` - user data hasn't loaded (should retry when user loads)
+   - If `Can approve step: false` - user doesn't have permission for this step
+
+See `DEBUG_TAKE_ACTION.md` for detailed debugging steps.

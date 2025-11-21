@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { Workflow, WorkflowStep, WorkflowApproval, Department, User, WorkflowStatus } from '@/lib/types';
 
@@ -10,6 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export default function WorkflowDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const workflowId = params.id as string;
 
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
@@ -32,6 +33,7 @@ export default function WorkflowDetailPage() {
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasAttemptedAutoOpen = useRef(false);
 
   useEffect(() => {
     fetchWorkflowData();
@@ -48,21 +50,47 @@ export default function WorkflowDetailPage() {
 
   // Check URL parameters to auto-open action modal
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const shouldOpenAction = searchParams.get('action') === 'true';
-      const stepId = searchParams.get('stepId');
+    // Only attempt once
+    if (hasAttemptedAutoOpen.current) return;
+    
+    const shouldOpenAction = searchParams.get('action') === 'true';
+    const stepId = searchParams.get('stepId');
+    
+    console.log('Auto-open check:', { 
+      shouldOpenAction, 
+      stepId, 
+      stepsLoaded: steps.length, 
+      currentUser: !!currentUser,
+      hasAttempted: hasAttemptedAutoOpen.current 
+    });
+    
+    if (shouldOpenAction && stepId && steps.length > 0 && currentUser && !loading) {
+      const step = steps.find(s => s.id === stepId);
+      console.log('Found step:', step);
       
-      if (shouldOpenAction && stepId && steps.length > 0) {
-        const step = steps.find(s => s.id === stepId);
-        if (step && canApproveStep(step)) {
-          openApprovalModal(step);
-          // Clean up URL
-          window.history.replaceState({}, '', `/workflows/${workflowId}`);
+      if (step) {
+        const canApprove = canApproveStep(step);
+        console.log('Can approve step:', canApprove);
+        
+        if (canApprove) {
+          console.log('Auto-opening action modal for step:', step.step_order);
+          hasAttemptedAutoOpen.current = true;
+          
+          // Small delay to ensure everything is rendered
+          setTimeout(() => {
+            openApprovalModal(step);
+            // Clean up URL after opening modal
+            window.history.replaceState({}, '', `/workflows/${workflowId}`);
+          }, 200);
+        } else {
+          // User can't approve, mark as attempted so we don't keep trying
+          hasAttemptedAutoOpen.current = true;
+          console.log('User cannot approve this step');
         }
       }
     }
-  }, [steps, workflowId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, currentUser, searchParams, loading]);
 
   const fetchCurrentUser = async () => {
     try {

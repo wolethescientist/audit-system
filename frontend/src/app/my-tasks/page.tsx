@@ -341,7 +341,10 @@ function TaskCard({ task, router, isOverdue, getActionLabel, getActionColor }: a
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/workflows/${task.workflow.id}?action=true&stepId=${task.step.id}`);
+              const url = `/workflows/${task.workflow.id}?action=true&stepId=${task.step.id}`;
+              console.log('Navigating to:', url);
+              console.log('Step ID:', task.step.id);
+              router.push(url);
             }}
             className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg"
           >
