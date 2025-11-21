@@ -18,17 +18,6 @@ const navigation: any[] = [
     roles: 'all' 
   },
   { 
-    name: 'My Tasks', 
-    href: '/my-tasks', 
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
-    ),
-    roles: 'all',
-    badge: true
-  },
-  { 
     name: 'Audits', 
     href: '/audits', 
     icon: (
@@ -46,7 +35,8 @@ const navigation: any[] = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
       </svg>
     ),
-    roles: 'all' 
+    roles: 'all',
+    badge: true
   },
   { 
     name: 'Planning', 
@@ -188,12 +178,12 @@ export default function Sidebar() {
                 {item.icon}
               </span>
               <span className="font-medium">{item.name}</span>
-              {item.badge && taskCount > 0 && (
+              {item.badge && item.name === 'Workflows' && taskCount > 0 && (
                 <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[24px] text-center">
                   {taskCount}
                 </span>
               )}
-              {isActive && !item.badge && (
+              {isActive && (!item.badge || taskCount === 0) && (
                 <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
               )}
             </Link>

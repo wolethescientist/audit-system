@@ -340,10 +340,18 @@ export default function WorkflowDetailPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">
-              Step {workflow.current_step || 0} of {steps.length}
+              {workflow.status === WorkflowStatus.PENDING 
+                ? 'Not Started' 
+                : `Step ${workflow.current_step} of ${steps.length}`
+              }
             </span>
             <span className="text-sm font-medium text-gray-700">
-              {steps.length > 0 ? Math.round(((workflow.current_step || 0) / steps.length) * 100) : 0}% Complete
+              {(() => {
+                if (workflow.status === WorkflowStatus.COMPLETED) return '100';
+                if (workflow.status === WorkflowStatus.PENDING) return '0';
+                const completedSteps = steps.filter(s => s.status === WorkflowStatus.APPROVED).length;
+                return steps.length > 0 ? Math.round((completedSteps / steps.length) * 100) : 0;
+              })()}% Complete
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -354,7 +362,14 @@ export default function WorkflowDetailPage() {
                 workflow.status === WorkflowStatus.IN_PROGRESS ? 'bg-blue-500' :
                 'bg-gray-400'
               }`}
-              style={{ width: `${steps.length > 0 ? ((workflow.current_step || 0) / steps.length) * 100 : 0}%` }}
+              style={{ 
+                width: `${(() => {
+                  if (workflow.status === WorkflowStatus.COMPLETED) return 100;
+                  if (workflow.status === WorkflowStatus.PENDING) return 0;
+                  const completedSteps = steps.filter(s => s.status === WorkflowStatus.APPROVED).length;
+                  return steps.length > 0 ? (completedSteps / steps.length) * 100 : 0;
+                })()}%` 
+              }}
             />
           </div>
         </div>
