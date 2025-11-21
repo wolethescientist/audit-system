@@ -24,14 +24,22 @@ export default function WorkflowsPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchCurrentUser();
+    const initializeUser = async () => {
+      await fetchCurrentUser();
+    };
+    initializeUser();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    
     if (activeTab === 'all') {
       fetchWorkflows();
     } else {
       fetchMyTasks();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, activeTab]);
+  }, [filter, activeTab, currentUser]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -65,27 +73,43 @@ export default function WorkflowsPage() {
   };
 
   const fetchMyTasks = async () => {
+    if (!currentUser) {
+      console.log('Cannot fetch tasks: currentUser is null');
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
+      console.log('Fetching workflows for user:', currentUser.id, currentUser.full_name);
       const response = await axios.get(`${API_URL}/workflows/my-workflows`, { headers });
+      console.log('Found workflows:', response.data.length);
       
       const tasksData: PendingTask[] = [];
       
       for (const workflow of response.data) {
+        console.log('Processing workflow:', workflow.reference_number, workflow.status);
+        
         if (workflow.status === 'completed' || workflow.status === 'rejected') {
+          console.log('Skipping completed/rejected workflow');
           continue;
         }
 
         const stepsRes = await axios.get(`${API_URL}/workflows/${workflow.id}/steps`, { headers });
+        console.log('Workflow steps:', stepsRes.data.length);
         
-        const myStep = stepsRes.data.find((step: WorkflowStep) => 
-          step.assigned_to_id === currentUser?.id || step.department_id === currentUser?.department_id
-        );
+        const myStep = stepsRes.data.find((step: WorkflowStep) => {
+          const isAssignedToMe = step.assigned_to_id === currentUser.id;
+          const isMyDepartment = step.department_id === currentUser.department_id;
+          console.log(`Step ${step.step_order}: assigned_to=${step.assigned_to_id}, my_id=${currentUser.id}, dept=${step.department_id}, my_dept=${currentUser.department_id}, match=${isAssignedToMe || isMyDepartment}`);
+          return isAssignedToMe || isMyDepartment;
+        });
         
         if (myStep) {
+          console.log('Found my step:', myStep.step_order, myStep.status);
+          
           let auditTitle = 'Unknown Audit';
           try {
             const auditRes = await axios.get(`${API_URL}/audits/${workflow.audit_id}`, { headers });
@@ -95,6 +119,7 @@ export default function WorkflowsPage() {
           }
 
           const isMyTurn = myStep.status === 'in_progress';
+          console.log('Is my turn?', isMyTurn);
 
           tasksData.push({
             workflow,
@@ -102,8 +127,12 @@ export default function WorkflowsPage() {
             audit_title: auditTitle,
             isMyTurn,
           });
+        } else {
+          console.log('No matching step found for this workflow');
         }
       }
+      
+      console.log('Total tasks found:', tasksData.length);
       
       tasksData.sort((a, b) => {
         if (a.isMyTurn && !b.isMyTurn) return -1;
