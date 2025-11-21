@@ -119,6 +119,77 @@ def list_workflows(
     workflows = query.order_by(Workflow.created_at.desc()).all()
     return workflows
 
+@router.get("/my-pending", response_model=List[WorkflowDetailResponse])
+def get_my_pending_workflows(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get workflows where I need to take action NOW (my step is currently active)"""
+    
+    # Build filter conditions
+    filter_conditions = [
+        WorkflowStep.status == WorkflowStatus.IN_PROGRESS,
+        WorkflowStep.assigned_to_id == current_user.id
+    ]
+    if current_user.department_id:
+        filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
+    
+    # Find steps assigned to me or my department that are in progress
+    pending_steps = db.query(WorkflowStep).filter(
+        or_(*filter_conditions)
+    ).all()
+    
+    # Get unique workflows
+    workflow_ids = list(set([step.workflow_id for step in pending_steps]))
+    
+    if not workflow_ids:
+        return []
+    
+    workflows = db.query(Workflow).filter(Workflow.id.in_(workflow_ids)).all()
+    
+    return workflows
+
+@router.get("/my-workflows", response_model=List[WorkflowResponse])
+def get_my_workflows(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all workflows where I'm assigned to any step (for visibility)"""
+    
+    try:
+        # Get workflow IDs where user is assigned in ANY step
+        if current_user.department_id:
+            # User has department - check both assigned_to and department
+            assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
+                or_(
+                    WorkflowStep.assigned_to_id == current_user.id,
+                    WorkflowStep.department_id == current_user.department_id
+                )
+            ).distinct().all()
+        else:
+            # User has no department - only check assigned_to
+            assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
+                WorkflowStep.assigned_to_id == current_user.id
+            ).distinct().all()
+        
+        assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
+        
+        # If no workflows assigned, return empty list
+        if not assigned_workflow_ids:
+            return []
+        
+        # Get all workflows where user is assigned
+        workflows = db.query(Workflow).filter(
+            Workflow.id.in_(assigned_workflow_ids)
+        ).order_by(Workflow.created_at.desc()).all()
+        
+        return workflows
+    except Exception as e:
+        print(f"Error in get_my_workflows: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching workflows: {str(e)}")
+
 @router.get("/{workflow_id}", response_model=WorkflowDetailResponse)
 def get_workflow(
     workflow_id: UUID,
@@ -303,74 +374,3 @@ def get_step_approvals(
     ).order_by(WorkflowApproval.created_at).all()
     
     return approvals
-
-@router.get("/my-pending", response_model=List[WorkflowDetailResponse])
-def get_my_pending_workflows(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get workflows where I need to take action NOW (my step is currently active)"""
-    
-    # Build filter conditions
-    filter_conditions = [
-        WorkflowStep.status == WorkflowStatus.IN_PROGRESS,
-        WorkflowStep.assigned_to_id == current_user.id
-    ]
-    if current_user.department_id:
-        filter_conditions.append(WorkflowStep.department_id == current_user.department_id)
-    
-    # Find steps assigned to me or my department that are in progress
-    pending_steps = db.query(WorkflowStep).filter(
-        or_(*filter_conditions)
-    ).all()
-    
-    # Get unique workflows
-    workflow_ids = list(set([step.workflow_id for step in pending_steps]))
-    
-    if not workflow_ids:
-        return []
-    
-    workflows = db.query(Workflow).filter(Workflow.id.in_(workflow_ids)).all()
-    
-    return workflows
-
-@router.get("/my-workflows", response_model=List[WorkflowResponse])
-def get_my_workflows(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get all workflows where I'm assigned to any step (for visibility)"""
-    
-    try:
-        # Get workflow IDs where user is assigned in ANY step
-        if current_user.department_id:
-            # User has department - check both assigned_to and department
-            assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
-                or_(
-                    WorkflowStep.assigned_to_id == current_user.id,
-                    WorkflowStep.department_id == current_user.department_id
-                )
-            ).distinct().all()
-        else:
-            # User has no department - only check assigned_to
-            assigned_workflow_ids = db.query(WorkflowStep.workflow_id).filter(
-                WorkflowStep.assigned_to_id == current_user.id
-            ).distinct().all()
-        
-        assigned_workflow_ids = [wf_id[0] for wf_id in assigned_workflow_ids]
-        
-        # If no workflows assigned, return empty list
-        if not assigned_workflow_ids:
-            return []
-        
-        # Get all workflows where user is assigned
-        workflows = db.query(Workflow).filter(
-            Workflow.id.in_(assigned_workflow_ids)
-        ).order_by(Workflow.created_at.desc()).all()
-        
-        return workflows
-    except Exception as e:
-        print(f"Error in get_my_workflows: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error fetching workflows: {str(e)}")
