@@ -48,6 +48,6 @@ def login(email: str, db: Session = Depends(get_db)):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/validate")
+@router.get("/validate", response_model=UserResponse)
 def validate_token(current_user: User = Depends(get_current_user)):
-    return {"valid": True, "user_id": str(current_user.id), "role": current_user.role}
+    return current_user
