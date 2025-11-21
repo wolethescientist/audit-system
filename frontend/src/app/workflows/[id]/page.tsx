@@ -53,16 +53,22 @@ export default function WorkflowDetailPage() {
     // Only attempt once
     if (hasAttemptedAutoOpen.current) return;
     
-    const shouldOpenAction = searchParams.get('action') === 'true';
-    const stepId = searchParams.get('stepId');
+    // Read directly from window.location for more reliable access
+    if (typeof window === 'undefined') return;
     
-    console.log('Auto-open check:', { 
-      shouldOpenAction, 
-      stepId, 
-      stepsLoaded: steps.length, 
-      currentUser: !!currentUser,
-      hasAttempted: hasAttemptedAutoOpen.current 
-    });
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldOpenAction = urlParams.get('action') === 'true';
+    const stepId = urlParams.get('stepId');
+    
+    console.log('=== AUTO-OPEN CHECK ===');
+    console.log('URL:', window.location.href);
+    console.log('shouldOpenAction:', shouldOpenAction);
+    console.log('stepId:', stepId);
+    console.log('stepsLoaded:', steps.length);
+    console.log('currentUser:', currentUser?.full_name || 'not loaded');
+    console.log('loading:', loading);
+    console.log('hasAttempted:', hasAttemptedAutoOpen.current);
+    console.log('======================');
     
     if (shouldOpenAction && stepId && steps.length > 0 && currentUser && !loading) {
       const step = steps.find(s => s.id === stepId);
@@ -73,7 +79,7 @@ export default function WorkflowDetailPage() {
         console.log('Can approve step:', canApprove);
         
         if (canApprove) {
-          console.log('Auto-opening action modal for step:', step.step_order);
+          console.log('✅ AUTO-OPENING ACTION MODAL for step:', step.step_order);
           hasAttemptedAutoOpen.current = true;
           
           // Small delay to ensure everything is rendered
@@ -81,16 +87,18 @@ export default function WorkflowDetailPage() {
             openApprovalModal(step);
             // Clean up URL after opening modal
             window.history.replaceState({}, '', `/workflows/${workflowId}`);
-          }, 200);
+          }, 300);
         } else {
           // User can't approve, mark as attempted so we don't keep trying
           hasAttemptedAutoOpen.current = true;
-          console.log('User cannot approve this step');
+          console.log('❌ User cannot approve this step');
         }
+      } else {
+        console.log('❌ Step not found with ID:', stepId);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [steps, currentUser, searchParams, loading]);
+  }, [steps, currentUser, loading]);
 
   const fetchCurrentUser = async () => {
     try {
