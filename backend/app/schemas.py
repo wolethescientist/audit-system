@@ -274,6 +274,7 @@ class WorkflowStepResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        use_enum_values = True
 
 class WorkflowCreate(BaseModel):
     audit_id: UUID
@@ -295,12 +296,14 @@ class WorkflowResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        use_enum_values = True
 
 class WorkflowDetailResponse(WorkflowResponse):
     steps: List[WorkflowStepResponse]
     
     class Config:
         from_attributes = True
+        use_enum_values = True
 
 # Approval Schemas
 class ApprovalCreate(BaseModel):
