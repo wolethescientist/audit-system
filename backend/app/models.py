@@ -61,7 +61,7 @@ class Department(Base):
 class Audit(Base):
     __tablename__ = "audits"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=Text("gen_random_uuid()"))
     title = Column(String, nullable=False)
     year = Column(Integer, nullable=False)
     scope = Column(Text)
