@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, Enum, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -61,7 +61,7 @@ class Department(Base):
 class Audit(Base):
     __tablename__ = "audits"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=Text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     title = Column(String, nullable=False)
     year = Column(Integer, nullable=False)
     scope = Column(Text)
