@@ -39,6 +39,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Full-screen loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-fade-in">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-primary-200 rounded-full"></div>
+              <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-800">Signing you in</p>
+              <p className="text-sm text-gray-500 mt-1">Please wait...</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -93,10 +109,11 @@ export default function LoginPage() {
             className="btn btn-primary w-full text-lg py-3 relative overflow-hidden group"
             disabled={loading}
           >
-            <span className={loading ? 'opacity-0' : 'opacity-100'}>Sign In</span>
+            <span className={loading ? 'opacity-0' : 'opacity-100 transition-opacity'}>Sign In</span>
             {loading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-white font-medium">Signing in...</span>
               </div>
             )}
           </button>
