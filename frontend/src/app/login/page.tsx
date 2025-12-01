@@ -125,6 +125,13 @@ export default function LoginPage() {
           <p>Secure enterprise authentication</p>
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 bg-gray-900/80 backdrop-blur-sm py-3">
+        <p className="text-center text-sm text-gray-300">
+          © 2025 Galaxy Backbone Limited
+        </p>
+      </div>
     </div>
   );
 }

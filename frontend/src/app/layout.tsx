@@ -5,6 +5,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
+import Footer from '@/components/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,11 +24,14 @@ export default function RootLayout({
           {isLoginPage ? (
             children
           ) : (
-            <div className="flex min-h-screen">
-              <Sidebar />
-              <main className="flex-1 bg-gray-50">
-                {children}
-              </main>
+            <div className="flex flex-col min-h-screen">
+              <div className="flex flex-1">
+                <Sidebar />
+                <main className="flex-1 bg-gray-50">
+                  {children}
+                </main>
+              </div>
+              <Footer />
             </div>
           )}
         </Providers>
