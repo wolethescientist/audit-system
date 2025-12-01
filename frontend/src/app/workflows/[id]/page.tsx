@@ -301,13 +301,13 @@ export default function WorkflowDetailPage() {
       case WorkflowStatus.PENDING:
         return 'bg-gray-100 text-gray-800';
       case WorkflowStatus.IN_PROGRESS:
-        return 'bg-blue-100 text-blue-800';
-      case WorkflowStatus.APPROVED:
         return 'bg-green-100 text-green-800';
+      case WorkflowStatus.APPROVED:
+        return 'bg-green-200 text-green-900';
       case WorkflowStatus.REJECTED:
         return 'bg-red-100 text-red-800';
       case WorkflowStatus.COMPLETED:
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-green-600 text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -362,7 +362,7 @@ export default function WorkflowDetailPage() {
       )}
 
       {/* Reference Number - Prominent Display */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-4 mb-6 shadow-lg">
+      <div className="bg-gradient-to-r from-green-600 to-green-800 text-white rounded-lg p-4 mb-6 shadow-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium opacity-90 mb-1">Workflow Reference Number</p>
@@ -372,7 +372,7 @@ export default function WorkflowDetailPage() {
             <span className={`px-4 py-2 rounded-full text-sm font-bold ${
               workflow.status === WorkflowStatus.COMPLETED ? 'bg-green-500' :
               workflow.status === WorkflowStatus.REJECTED ? 'bg-red-500' :
-              workflow.status === WorkflowStatus.IN_PROGRESS ? 'bg-yellow-400 text-gray-900' :
+              workflow.status === WorkflowStatus.IN_PROGRESS ? 'bg-gray-400 text-white' :
               'bg-gray-300 text-gray-900'
             }`}>
               {workflow.status.replace('_', ' ').toUpperCase()}
@@ -385,7 +385,7 @@ export default function WorkflowDetailPage() {
         <div className="flex justify-between items-center mb-4">
           <button
             onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-green-600 hover:text-green-800"
           >
             ← Back to Workflows
           </button>
@@ -478,9 +478,9 @@ export default function WorkflowDetailPage() {
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
               className={`h-3 rounded-full transition-all duration-500 ${
-                workflow.status === WorkflowStatus.COMPLETED ? 'bg-green-500' :
+                workflow.status === WorkflowStatus.COMPLETED ? 'bg-green-600' :
                 workflow.status === WorkflowStatus.REJECTED ? 'bg-red-500' :
-                workflow.status === WorkflowStatus.IN_PROGRESS ? 'bg-blue-500' :
+                workflow.status === WorkflowStatus.IN_PROGRESS ? 'bg-green-500' :
                 'bg-gray-400'
               }`}
               style={{ 
@@ -502,8 +502,8 @@ export default function WorkflowDetailPage() {
               {/* Timeline Line */}
               <div className="flex flex-col items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-4 ${
-                  step.status === WorkflowStatus.APPROVED ? 'bg-green-500 text-white border-green-200' :
-                  step.status === WorkflowStatus.IN_PROGRESS ? 'bg-blue-500 text-white border-blue-200 animate-pulse' :
+                  step.status === WorkflowStatus.APPROVED ? 'bg-green-600 text-white border-green-200' :
+                  step.status === WorkflowStatus.IN_PROGRESS ? 'bg-green-500 text-white border-green-200 animate-pulse' :
                   step.status === WorkflowStatus.REJECTED ? 'bg-red-500 text-white border-red-200' :
                   'bg-gray-200 text-gray-600 border-gray-100'
                 }`}>
@@ -521,8 +521,8 @@ export default function WorkflowDetailPage() {
               {/* Step Details */}
               <div className="flex-1 pb-6">
                 <div className={`border-2 rounded-lg p-4 ${
-                  step.status === WorkflowStatus.IN_PROGRESS ? 'border-blue-500 bg-blue-50' :
-                  step.status === WorkflowStatus.APPROVED ? 'border-green-300 bg-green-50' :
+                  step.status === WorkflowStatus.IN_PROGRESS ? 'border-green-500 bg-green-50' :
+                  step.status === WorkflowStatus.APPROVED ? 'border-green-600 bg-green-50' :
                   step.status === WorkflowStatus.REJECTED ? 'border-red-300 bg-red-50' :
                   'border-gray-200 bg-gray-50'
                 }`}>
@@ -597,7 +597,7 @@ export default function WorkflowDetailPage() {
                   {canApproveStep(step) && (
                     <button
                       onClick={() => openApprovalModal(step)}
-                      className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                      className="mt-3 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
                     >
                       Take Action on This Step
                     </button>
@@ -619,8 +619,8 @@ export default function WorkflowDetailPage() {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                    step.status === WorkflowStatus.APPROVED ? 'bg-green-500 text-white' :
-                    step.status === WorkflowStatus.IN_PROGRESS ? 'bg-blue-500 text-white' :
+                    step.status === WorkflowStatus.APPROVED ? 'bg-green-600 text-white' :
+                    step.status === WorkflowStatus.IN_PROGRESS ? 'bg-green-500 text-white' :
                     step.status === WorkflowStatus.REJECTED ? 'bg-red-500 text-white' :
                     'bg-gray-300 text-gray-600'
                   }`}>
@@ -680,7 +680,7 @@ export default function WorkflowDetailPage() {
               {canApproveStep(step) && (
                 <button
                   onClick={() => openApprovalModal(step)}
-                  className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                  className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                 >
                   Take Action
                 </button>
@@ -774,7 +774,7 @@ export default function WorkflowDetailPage() {
                 className={`px-6 py-2 rounded-lg font-medium ${
                   isSubmitting
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
                 {isSubmitting ? (

@@ -28,7 +28,7 @@ export default function DashboardPage() {
     { 
       label: 'Total Audits', 
       value: analytics?.total_audits || 0, 
-      gradient: 'from-blue-500 to-blue-600',
+      gradient: 'from-gray-700 to-gray-800',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -38,7 +38,7 @@ export default function DashboardPage() {
     { 
       label: 'Planned', 
       value: analytics?.planned_audits || 0, 
-      gradient: 'from-yellow-500 to-yellow-600',
+      gradient: 'from-gray-500 to-gray-600',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -48,7 +48,7 @@ export default function DashboardPage() {
     { 
       label: 'Executing', 
       value: analytics?.executing_audits || 0, 
-      gradient: 'from-purple-500 to-purple-600',
+      gradient: 'from-green-500 to-green-600',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -58,7 +58,7 @@ export default function DashboardPage() {
     { 
       label: 'Completed', 
       value: analytics?.completed_audits || 0, 
-      gradient: 'from-green-500 to-green-600',
+      gradient: 'from-green-600 to-green-700',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -68,7 +68,7 @@ export default function DashboardPage() {
     { 
       label: 'Total Findings', 
       value: analytics?.total_findings || 0, 
-      gradient: 'from-orange-500 to-orange-600',
+      gradient: 'from-gray-600 to-gray-700',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -88,7 +88,7 @@ export default function DashboardPage() {
     { 
       label: 'Overdue Follow-ups', 
       value: analytics?.overdue_followups || 0, 
-      gradient: 'from-pink-500 to-pink-600',
+      gradient: 'from-gray-800 to-black',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

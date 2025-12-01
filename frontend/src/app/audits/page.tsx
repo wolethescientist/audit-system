@@ -16,11 +16,11 @@ export default function AuditsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      planned: 'bg-yellow-100 text-yellow-800',
-      executing: 'bg-blue-100 text-blue-800',
-      reporting: 'bg-purple-100 text-purple-800',
-      followup: 'bg-orange-100 text-orange-800',
-      closed: 'bg-green-100 text-green-800',
+      planned: 'bg-gray-100 text-gray-800',
+      executing: 'bg-green-100 text-green-800',
+      reporting: 'bg-green-200 text-green-900',
+      followup: 'bg-gray-200 text-gray-900',
+      closed: 'bg-green-600 text-white',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };

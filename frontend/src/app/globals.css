@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 text-gray-900;
+    @apply bg-gradient-to-br from-gray-50 via-gray-100 to-green-50 text-gray-900;
   }
 }
 

@@ -122,8 +122,8 @@ export default function CreateWorkflowPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
         {/* Reference Number - Immutable */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-          <label className="block text-sm font-medium text-blue-900 mb-2">
+        <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+          <label className="block text-sm font-medium text-green-900 mb-2">
             Workflow Reference Number (Auto-generated)
           </label>
           <div className="flex items-center gap-3">
@@ -131,11 +131,11 @@ export default function CreateWorkflowPage() {
               type="text"
               value={referenceNumber}
               readOnly
-              className="flex-1 bg-white border-2 border-blue-300 rounded-lg px-4 py-3 font-mono text-lg font-bold text-blue-900 cursor-not-allowed"
+              className="flex-1 bg-white border-2 border-green-300 rounded-lg px-4 py-3 font-mono text-lg font-bold text-green-900 cursor-not-allowed"
             />
-            <span className="text-sm text-blue-700 italic">Immutable</span>
+            <span className="text-sm text-green-700 italic">Immutable</span>
           </div>
-          <p className="text-xs text-blue-600 mt-2">
+          <p className="text-xs text-green-600 mt-2">
             This reference number will be used to track this workflow throughout its lifecycle.
           </p>
         </div>
@@ -277,7 +277,7 @@ export default function CreateWorkflowPage() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
           >
             {loading ? 'Creating...' : 'Create Workflow'}
           </button>

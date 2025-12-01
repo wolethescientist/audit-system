@@ -152,9 +152,9 @@ export default function MyTasksPage() {
   const getActionColor = (actionRequired: string) => {
     switch (actionRequired) {
       case 'review_and_approve':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-green-100 text-green-800';
       case 'sign':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-gray-200 text-gray-900';
       case 'review':
         return 'bg-green-100 text-green-800';
       case 'acknowledge':
@@ -346,7 +346,7 @@ function TaskCard({ task, router, isOverdue, getActionLabel, getActionColor }: a
               console.log('Step ID:', task.step.id);
               router.push(url);
             }}
-            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg"
+            className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold text-lg"
           >
             Take Action Now →
           </button>

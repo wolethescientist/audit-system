@@ -157,13 +157,13 @@ export default function WorkflowsPage() {
       case WorkflowStatus.PENDING:
         return 'bg-gray-100 text-gray-800';
       case WorkflowStatus.IN_PROGRESS:
-        return 'bg-blue-100 text-blue-800';
-      case WorkflowStatus.APPROVED:
         return 'bg-green-100 text-green-800';
+      case WorkflowStatus.APPROVED:
+        return 'bg-green-200 text-green-900';
       case WorkflowStatus.REJECTED:
         return 'bg-red-100 text-red-800';
       case WorkflowStatus.COMPLETED:
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-green-600 text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -195,10 +195,10 @@ export default function WorkflowsPage() {
 
   const getActionColor = (actionRequired: string) => {
     switch (actionRequired) {
-      case 'review_and_approve': return 'bg-blue-100 text-blue-800';
-      case 'sign': return 'bg-purple-100 text-purple-800';
-      case 'review': return 'bg-green-100 text-green-800';
-      case 'acknowledge': return 'bg-yellow-100 text-yellow-800';
+      case 'review_and_approve': return 'bg-green-100 text-green-800';
+      case 'sign': return 'bg-gray-200 text-gray-900';
+      case 'review': return 'bg-green-200 text-green-900';
+      case 'acknowledge': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -214,7 +214,7 @@ export default function WorkflowsPage() {
         <h1 className="text-3xl font-bold">Workflows</h1>
         <button
           onClick={() => router.push('/workflows/create')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
         >
           Create Workflow
         </button>
@@ -227,7 +227,7 @@ export default function WorkflowsPage() {
             onClick={() => setActiveTab('all')}
             className={`px-4 py-3 font-medium border-b-2 transition-colors ${
               activeTab === 'all'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-green-600 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -237,7 +237,7 @@ export default function WorkflowsPage() {
             onClick={() => setActiveTab('my-tasks')}
             className={`px-4 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === 'my-tasks'
-                ? 'border-blue-600 text-blue-600'
+                ? 'border-green-600 text-green-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -257,7 +257,7 @@ export default function WorkflowsPage() {
         <button
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg ${
-            filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            filter === 'all' ? 'bg-green-600 text-white' : 'bg-gray-200'
           }`}
         >
           All
@@ -265,7 +265,7 @@ export default function WorkflowsPage() {
         <button
           onClick={() => setFilter('pending')}
           className={`px-4 py-2 rounded-lg ${
-            filter === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            filter === 'pending' ? 'bg-green-600 text-white' : 'bg-gray-200'
           }`}
         >
           Pending
@@ -273,7 +273,7 @@ export default function WorkflowsPage() {
         <button
           onClick={() => setFilter('in_progress')}
           className={`px-4 py-2 rounded-lg ${
-            filter === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            filter === 'in_progress' ? 'bg-green-600 text-white' : 'bg-gray-200'
           }`}
         >
           In Progress
@@ -281,7 +281,7 @@ export default function WorkflowsPage() {
         <button
           onClick={() => setFilter('completed')}
           className={`px-4 py-2 rounded-lg ${
-            filter === 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200'
           }`}
         >
           Completed
@@ -370,7 +370,7 @@ export default function WorkflowsPage() {
               {tasks.filter(t => !t.isMyTurn).length > 0 && (
                 <div>
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                    <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
                     Upcoming - Waiting for Previous Steps ({tasks.filter(t => !t.isMyTurn).length})
                   </h2>
                   <div className="space-y-4">
@@ -413,7 +413,7 @@ function TaskCard({ task, router, isOverdue, getActionLabel, getActionColor }: a
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-xl font-bold">{task.workflow.name}</h2>
-              <span className="text-sm font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              <span className="text-sm font-mono bg-green-100 text-green-800 px-2 py-1 rounded">
                 {task.workflow.reference_number}
               </span>
               {!task.isMyTurn && (
@@ -434,11 +434,11 @@ function TaskCard({ task, router, isOverdue, getActionLabel, getActionColor }: a
         </div>
 
         <div className={`rounded-lg p-4 mb-4 ${
-          task.isMyTurn ? 'bg-blue-50 border-2 border-blue-200' : 'bg-gray-50 border border-gray-200'
+          task.isMyTurn ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50 border border-gray-200'
         }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-              task.isMyTurn ? 'bg-blue-500 text-white' : 'bg-gray-400 text-white'
+              task.isMyTurn ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
             }`}>
               {task.step.step_order}
             </div>
@@ -481,7 +481,7 @@ function TaskCard({ task, router, isOverdue, getActionLabel, getActionColor }: a
               e.stopPropagation();
               router.push(`/workflows/${task.workflow.id}`);
             }}
-            className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg"
+            className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold text-lg"
           >
             Take Action Now →
           </button>
