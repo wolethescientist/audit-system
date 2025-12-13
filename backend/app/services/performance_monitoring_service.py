@@ -190,18 +190,29 @@ class PerformanceMonitoringService:
         try:
             now = datetime.utcnow()
             
-            # Connection pool metrics
+            # Connection pool metrics (handle NullPool)
             pool = engine.pool
-            total_connections = pool.size() + pool.overflow()
-            active_connections = pool.checkedout()
             
-            if total_connections > 0:
-                connection_usage = (active_connections / total_connections) * 100
-                self._add_metric('db_connection_usage_percent', connection_usage, 'percent', now, 'database')
-            
-            self._add_metric('db_active_connections', active_connections, 'count', now, 'database')
-            self._add_metric('db_pool_size', pool.size(), 'count', now, 'database')
-            self._add_metric('db_overflow', pool.overflow(), 'count', now, 'database')
+            # Check if pool has size/overflow methods (not available in NullPool)
+            if hasattr(pool, 'size') and hasattr(pool, 'overflow'):
+                total_connections = pool.size() + pool.overflow()
+                active_connections = pool.checkedout()
+                
+                if total_connections > 0:
+                    connection_usage = (active_connections / total_connections) * 100
+                    self._add_metric('db_connection_usage_percent', connection_usage, 'percent', now, 'database')
+                
+                self._add_metric('db_active_connections', active_connections, 'count', now, 'database')
+                self._add_metric('db_pool_size', pool.size(), 'count', now, 'database')
+                self._add_metric('db_overflow', pool.overflow(), 'count', now, 'database')
+            else:
+                # For NullPool, we can only track checked out connections
+                if hasattr(pool, 'checkedout'):
+                    active_connections = pool.checkedout()
+                    self._add_metric('db_active_connections', active_connections, 'count', now, 'database')
+                
+                # Log that we're using NullPool (no connection pooling)
+                self._add_metric('db_pool_type', 0, 'nullpool', now, 'database')
             
             # Database query metrics
             db = SessionLocal()
