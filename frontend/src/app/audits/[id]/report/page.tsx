@@ -1,104 +1,231 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { Audit } from '@/lib/types';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+// Simple icon components as fallbacks
+const ArrowLeft = ({ className }: { className?: string }) => <span className={className}>←</span>;
+const FileText = ({ className }: { className?: string }) => <span className={className}>📄</span>;
+const Loader2 = ({ className }: { className?: string }) => <span className={`${className} animate-spin`}>⏳</span>;
+const AlertCircle = ({ className }: { className?: string }) => <span className={className}>⚠️</span>;
+import ReportGenerator from '@/components/reports/ReportGenerator';
+import ReportViewer from '@/components/reports/ReportViewer';
 
-export default function ReportPage() {
+interface Audit {
+  id: string;
+  title: string;
+  year: number;
+  status: string;
+  scope: string;
+  department_name: string;
+}
+
+export default function AuditReportPage() {
   const params = useParams();
+  const router = useRouter();
   const auditId = params.id as string;
 
-  const { data: audit } = useQuery<Audit>({
-    queryKey: ['audit', auditId],
-    queryFn: async () => {
-      const response = await api.get(`/audits/${auditId}`);
-      return response.data;
-    },
-  });
+  const [audit, setAudit] = useState<Audit | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [reportGenerated, setReportGenerated] = useState(false);
 
-  const tabs = [
-    { name: 'Overview', href: `/audits/${auditId}` },
-    { name: 'Work Program', href: `/audits/${auditId}/work-program` },
-    { name: 'Evidence', href: `/audits/${auditId}/evidence` },
-    { name: 'Findings', href: `/audits/${auditId}/findings` },
-    { name: 'Queries', href: `/audits/${auditId}/queries` },
-    { name: 'Report', href: `/audits/${auditId}/report`, active: true },
-    { name: 'Follow-up', href: `/audits/${auditId}/followup` },
-  ];
+  useEffect(() => {
+    fetchAudit();
+  }, [auditId]);
+
+  const fetchAudit = async () => {
+    try {
+      const response = await fetch(`/api/v1/audits/${auditId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch audit');
+      }
+
+      const data = await response.json();
+      setAudit(data);
+
+      // Check if audit is ready for reporting
+      const reportReadyStatuses = ['executing', 'reporting', 'followup', 'closed'];
+      if (!reportReadyStatuses.includes(data.status)) {
+        setError(`Audit status "${data.status}" is not ready for reporting. Must be one of: ${reportReadyStatuses.join(', ')}`);
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load audit');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReportGenerated = (reportData: any) => {
+    setReportGenerated(true);
+    setShowGenerator(false);
+  };
+
+  const handleGenerateClick = () => {
+    setShowGenerator(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading audit...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => router.back()}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!audit) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Audit not found.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <Link href="/audits" className="text-primary-600 hover:underline mb-2 inline-block">
-          ← Back to Audits
-        </Link>
-        <h1 className="text-3xl font-bold">{audit?.title || 'Loading...'}</h1>
-        <p className="text-gray-600 mt-2">Audit ID: {audit?.id}</p>
-      </div>
-
-      <div className="border-b border-gray-200 mb-6">
-        <div className="flex gap-4 overflow-x-auto">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.name}
-              href={tab.href}
-              className={`px-4 py-2 border-b-2 whitespace-nowrap ${
-                tab.active
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent hover:border-primary-600'
-              }`}
-            >
-              {tab.name}
-            </Link>
-          ))}
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Audit
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <FileText className="h-8 w-8" />
+            Audit Report
+          </h1>
+          <p className="text-muted-foreground">
+            {audit.title} ({audit.year})
+          </p>
         </div>
       </div>
 
-      <div className="card">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Audit Report</h2>
-          <div className="space-x-2">
-            <button className="btn-secondary">Preview</button>
-            <button className="btn-primary">Generate Report</button>
+      {/* Audit Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">Title</div>
+              <div className="font-medium">{audit.title}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">Year</div>
+              <div className="font-medium">{audit.year}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">Status</div>
+              <div className="font-medium capitalize">{audit.status.replace('_', ' ')}</div>
+            </div>
+            {audit.scope && (
+              <div className="md:col-span-3">
+                <div className="text-sm font-medium text-muted-foreground">Scope</div>
+                <div className="font-medium">{audit.scope}</div>
+              </div>
+            )}
           </div>
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <h3 className="font-semibold mb-2">Executive Summary</h3>
-            <textarea 
-              className="w-full border rounded-lg p-3 min-h-[100px]"
-              placeholder="Enter executive summary..."
-            />
+        </CardContent>
+      </Card>
+
+      {/* Report Generation/Viewing */}
+      {showGenerator ? (
+        <ReportGenerator
+          auditId={auditId}
+          auditTitle={audit.title}
+          onReportGenerated={handleReportGenerated}
+        />
+      ) : (
+        <ReportViewer
+          auditId={auditId}
+          showGenerateButton={true}
+          onGenerateClick={handleGenerateClick}
+        />
+      )}
+
+      {/* ISO Compliance Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>ISO 19011:2018 Compliance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium mb-2">Report Structure</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Executive Summary with audit conclusions</li>
+                  <li>• Audit identification (objectives, scope, criteria)</li>
+                  <li>• Audit team and auditee identification</li>
+                  <li>• Audit dates and locations</li>
+                  <li>• Audit criteria documents</li>
+                  <li>• Detailed findings with objective evidence</li>
+                  <li>• Audit conclusions with conformity assessment</li>
+                  <li>• CAPA recommendations</li>
+                </ul>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium mb-2">AI Generation Features</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Automated data aggregation from audit records</li>
+                  <li>• ISO-compliant terminology and structure</li>
+                  <li>• Objective evidence correlation</li>
+                  <li>• Multi-format export (PDF, Word, CSV, HTML)</li>
+                  <li>• Compliance validation and verification</li>
+                  <li>• Professional formatting and presentation</li>
+                </ul>
+              </div>
+            </div>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                All generated reports strictly follow ISO 19011:2018 Guidelines for auditing management systems, 
+                ensuring compliance with international auditing standards.
+              </AlertDescription>
+            </Alert>
           </div>
-          
-          <div>
-            <h3 className="font-semibold mb-2">Scope and Objectives</h3>
-            <textarea 
-              className="w-full border rounded-lg p-3 min-h-[100px]"
-              placeholder="Enter scope and objectives..."
-            />
-          </div>
-          
-          <div>
-            <h3 className="font-semibold mb-2">Methodology</h3>
-            <textarea 
-              className="w-full border rounded-lg p-3 min-h-[100px]"
-              placeholder="Enter methodology..."
-            />
-          </div>
-          
-          <div>
-            <h3 className="font-semibold mb-2">Conclusion</h3>
-            <textarea 
-              className="w-full border rounded-lg p-3 min-h-[100px]"
-              placeholder="Enter conclusion..."
-            />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

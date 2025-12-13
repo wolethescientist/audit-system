@@ -9,3 +9,9 @@ python-multipart
 psycopg2-binary
 supabase
 pydantic[email]
+google-generativeai
+reportlab
+python-docx
+pandas
+psutil
+asyncio
