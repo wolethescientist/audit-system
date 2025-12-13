@@ -9,9 +9,9 @@ import string
 import time
 
 from app.database import get_db
-from app.auth import get_current_user
+from app.auth import get_current_user, require_roles
 from app.models import (
-    User, Workflow, WorkflowStep, WorkflowApproval, 
+    User, UserRole, Workflow, WorkflowStep, WorkflowApproval, 
     WorkflowStatus, ApprovalAction, Audit
 )
 from app.schemas import (
