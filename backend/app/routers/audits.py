@@ -294,7 +294,7 @@ def create_finding(
     audit_id: UUID,
     finding_data: FindingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
 ):
     finding = AuditFinding(audit_id=audit_id, **finding_data.model_dump())
     db.add(finding)

@@ -65,6 +65,9 @@ async def get_current_user(
 
 def require_roles(allowed_roles: list[UserRole]):
     def role_checker(current_user: User = Depends(get_current_user)):
+        # SYSTEM_ADMIN always has access to everything
+        if current_user.role == UserRole.SYSTEM_ADMIN:
+            return current_user
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
