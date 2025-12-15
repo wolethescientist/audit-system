@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # Supabase Storage Configuration
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
-    SUPABASE_BUCKET_NAME: str = "audit-evidence"
+    SUPABASE_BUCKET_NAME: str = "Audit"
     
     class Config:
         env_file = ".env"
