@@ -560,24 +560,31 @@ def initiate_audit(
     if missing_fields:
         raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing_fields)}")
     
-    # Update audit with initiation data
-    for key, value in initiation_data.items():
-        if hasattr(audit, key):
-            setattr(audit, key, value)
-    
-    # Mark initiation as completed and move to next phase
-    audit.initiation_completed = True
-    audit.status = AuditStatus.INITIATED
-    
-    db.commit()
-    db.refresh(audit)
-    
-    return {
-        "success": True, 
-        "message": "Audit initiation completed per ISO 19011 Clause 6.2",
-        "audit_id": str(audit.id),
-        "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
-    }
+    try:
+        # Update audit with initiation data
+        for key, value in initiation_data.items():
+            if hasattr(audit, key) and value:  # Skip empty values
+                setattr(audit, key, value)
+        
+        # Mark initiation as completed and move to next phase
+        audit.initiation_completed = True
+        audit.status = AuditStatus.INITIATED
+        
+        db.commit()
+        db.refresh(audit)
+        
+        return {
+            "success": True, 
+            "message": "Audit initiation completed per ISO 19011 Clause 6.2",
+            "audit_id": str(audit.id),
+            "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error during audit initiation: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Failed to initiate audit: {str(e)}")
 
 @router.post("/{audit_id}/assign-team")
 def assign_audit_team(
