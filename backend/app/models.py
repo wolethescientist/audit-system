@@ -15,26 +15,26 @@ class UserRole(str, enum.Enum):
     VIEWER = "viewer"
 
 class AuditStatus(str, enum.Enum):
-    PLANNED = "planned"
-    INITIATED = "initiated"      # ISO 19011 Clause 6.2
-    PREPARATION = "preparation"  # ISO 19011 Clause 6.3
-    EXECUTING = "executing"      # ISO 19011 Clause 6.4
-    REPORTING = "reporting"      # ISO 19011 Clause 6.5
-    FOLLOWUP = "followup"        # ISO 19011 Clause 6.6
-    CLOSED = "closed"
+    PLANNED = "PLANNED"
+    INITIATED = "INITIATED"      # ISO 19011 Clause 6.2
+    PREPARATION = "PREPARATION"  # ISO 19011 Clause 6.3
+    EXECUTING = "EXECUTING"      # ISO 19011 Clause 6.4
+    REPORTING = "REPORTING"      # ISO 19011 Clause 6.5
+    FOLLOWUP = "FOLLOWUP"        # ISO 19011 Clause 6.6
+    CLOSED = "CLOSED"
 
 class ReportStatus(str, enum.Enum):
-    DRAFT = "draft"
-    UNDER_REVIEW = "under_review"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    PUBLISHED = "published"
+    DRAFT = "DRAFT"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    PUBLISHED = "PUBLISHED"
 
 class FindingSeverity(str, enum.Enum):
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
 
 class User(Base):
     __tablename__ = "users"
@@ -288,11 +288,11 @@ class AuditFollowup(Base):
     assigned_to = relationship("User")
 
 class WorkflowStatus(str, enum.Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    COMPLETED = "completed"
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    COMPLETED = "COMPLETED"
 
 class Workflow(Base):
     __tablename__ = "workflows"
@@ -333,57 +333,57 @@ class WorkflowStep(Base):
     approvals = relationship("WorkflowApproval", back_populates="workflow_step")
 
 class ApprovalAction(str, enum.Enum):
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    RETURNED = "returned"
-    SIGNED = "signed"
-    REVIEWED = "reviewed"
-    ACKNOWLEDGED = "acknowledged"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    RETURNED = "RETURNED"
+    SIGNED = "SIGNED"
+    REVIEWED = "REVIEWED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
 
 class ComplianceStatus(str, enum.Enum):
-    NOT_ASSESSED = "not_assessed"
-    COMPLIANT = "compliant"
-    PARTIALLY_COMPLIANT = "partially_compliant"
-    NON_COMPLIANT = "non_compliant"
-    NOT_APPLICABLE = "not_applicable"
+    NOT_ASSESSED = "NOT_ASSESSED"
+    COMPLIANT = "COMPLIANT"
+    PARTIALLY_COMPLIANT = "PARTIALLY_COMPLIANT"
+    NON_COMPLIANT = "NON_COMPLIANT"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 class RiskCategory(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 class CAPAType(str, enum.Enum):
-    CORRECTIVE = "corrective"
-    PREVENTIVE = "preventive"
-    BOTH = "both"
+    CORRECTIVE = "CORRECTIVE"
+    PREVENTIVE = "PREVENTIVE"
+    BOTH = "BOTH"
 
 class CAPAStatus(str, enum.Enum):
-    OPEN = "open"
-    IN_PROGRESS = "in_progress"
-    PENDING_VERIFICATION = "pending_verification"
-    CLOSED = "closed"
-    OVERDUE = "overdue"
+    OPEN = "OPEN"
+    IN_PROGRESS = "IN_PROGRESS"
+    PENDING_VERIFICATION = "PENDING_VERIFICATION"
+    CLOSED = "CLOSED"
+    OVERDUE = "OVERDUE"
 
 class DocumentStatus(str, enum.Enum):
-    DRAFT = "draft"
-    UNDER_REVIEW = "under_review"
-    APPROVED = "approved"
-    ACTIVE = "active"
-    EXPIRED = "expired"
-    ARCHIVED = "archived"
+    DRAFT = "DRAFT"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    APPROVED = "APPROVED"
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    ARCHIVED = "ARCHIVED"
 
 class AssetStatus(str, enum.Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    DISPOSED = "disposed"
-    UNDER_MAINTENANCE = "under_maintenance"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+    DISPOSED = "DISPOSED"
+    UNDER_MAINTENANCE = "UNDER_MAINTENANCE"
 
 class VendorRiskRating(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 class WorkflowApproval(Base):
     __tablename__ = "workflow_approvals"

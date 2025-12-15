@@ -8,26 +8,28 @@ export enum UserRole {
 }
 
 export enum AuditStatus {
-  PLANNED = 'planned',
-  EXECUTING = 'executing',
-  REPORTING = 'reporting',
-  FOLLOWUP = 'followup',
-  CLOSED = 'closed',
+  PLANNED = 'PLANNED',
+  INITIATED = 'INITIATED',
+  PREPARATION = 'PREPARATION',
+  EXECUTING = 'EXECUTING',
+  REPORTING = 'REPORTING',
+  FOLLOWUP = 'FOLLOWUP',
+  CLOSED = 'CLOSED',
 }
 
 export enum FindingSeverity {
-  CRITICAL = 'critical',
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
+  CRITICAL = 'CRITICAL',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
 }
 
 export enum ReportStatus {
-  DRAFT = 'draft',
-  UNDER_REVIEW = 'under_review',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  PUBLISHED = 'published',
+  DRAFT = 'DRAFT',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PUBLISHED = 'PUBLISHED',
 }
 
 export interface User {
@@ -170,20 +172,20 @@ export interface CAPASummary {
 }
 
 export enum WorkflowStatus {
-  PENDING = 'pending',
-  IN_PROGRESS = 'in_progress',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  COMPLETED = 'completed',
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  COMPLETED = 'COMPLETED',
 }
 
 export enum ApprovalAction {
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  RETURNED = 'returned',
-  SIGNED = 'signed',
-  REVIEWED = 'reviewed',
-  ACKNOWLEDGED = 'acknowledged',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  RETURNED = 'RETURNED',
+  SIGNED = 'SIGNED',
+  REVIEWED = 'REVIEWED',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
 }
 
 export interface WorkflowStep {
@@ -242,10 +244,10 @@ export interface WorkflowCreate {
 
 // Risk Assessment Types
 export enum RiskCategory {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
 }
 
 export interface RiskAssessment {
@@ -369,17 +371,17 @@ export interface Asset {
 
 // CAPA Management Types
 export enum CAPAType {
-  CORRECTIVE = 'corrective',
-  PREVENTIVE = 'preventive',
-  BOTH = 'both',
+  CORRECTIVE = 'CORRECTIVE',
+  PREVENTIVE = 'PREVENTIVE',
+  BOTH = 'BOTH',
 }
 
 export enum CAPAStatus {
-  OPEN = 'open',
-  IN_PROGRESS = 'in_progress',
-  PENDING_VERIFICATION = 'pending_verification',
-  CLOSED = 'closed',
-  OVERDUE = 'overdue',
+  OPEN = 'OPEN',
+  IN_PROGRESS = 'IN_PROGRESS',
+  PENDING_VERIFICATION = 'PENDING_VERIFICATION',
+  CLOSED = 'CLOSED',
+  OVERDUE = 'OVERDUE',
 }
 
 export interface CAPAItem {
@@ -504,12 +506,12 @@ export interface CAPAProgress {
 }
 // Document Control Types
 export enum DocumentStatus {
-  DRAFT = 'draft',
-  UNDER_REVIEW = 'under_review',
-  APPROVED = 'approved',
-  ACTIVE = 'active',
-  EXPIRED = 'expired',
-  ARCHIVED = 'archived',
+  DRAFT = 'DRAFT',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export interface Document {
