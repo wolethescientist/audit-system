@@ -553,8 +553,10 @@ def initiate_audit(
         raise HTTPException(status_code=400, detail=f"Audit must be in planned or initiated status to initiate. Current status: {status_str}")
     
     # Validate required ISO 19011 fields
+    logger.info(f"Initiation data received: {initiation_data}")
     required_fields = ["audit_objectives", "audit_criteria", "audit_scope_detailed", "audit_methodology"]
     missing_fields = [field for field in required_fields if not initiation_data.get(field)]
+    logger.info(f"Missing fields: {missing_fields}")
     if missing_fields:
         raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing_fields)}")
     
