@@ -771,43 +771,6 @@ def generate_audit_checklist(
         "checklist_items_count": len(checklist_items)
     }
 
-@router.post("/{audit_id}/document-requests")
-def create_document_requests(
-    audit_id: UUID,
-    request_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
-):
-    """
-    ISO 19011 Clause 6.3.2 - Create document requests for auditees
-    """
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    
-    # Create document request records (simplified implementation)
-    document_requests = request_data.get("document_requests", [])
-    
-    # In a full implementation, this would create formal document request records
-    # For now, we'll create audit queries as document requests
-    for doc_request in document_requests:
-        if audit.auditee_contact_person_id:
-            query = AuditQuery(
-                audit_id=audit_id,
-                from_user_id=current_user.id,
-                to_user_id=audit.auditee_contact_person_id,
-                message=f"Document Request: {doc_request.get('document_name', '')} - {doc_request.get('description', '')}"
-            )
-            db.add(query)
-    
-    db.commit()
-    
-    return {
-        "success": True,
-        "message": f"Created {len(document_requests)} document requests",
-        "requests_sent_to": audit.auditee_contact_person_id
-    }
-
 @router.get("/{audit_id}/preparation-status")
 def get_preparation_status(
     audit_id: UUID,
@@ -1374,60 +1337,6 @@ def create_audit_risk_assessment(
         "success": True,
         "message": "Risk assessment created",
         "assessment": risk_assessment
-    }
-
-@router.get("/{audit_id}/preparation-status")
-def get_preparation_status(
-    audit_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get comprehensive preparation status per ISO 19011 Clause 6.3
-    """
-    from app.models import AuditPreparationChecklist, AuditDocumentRequest, AuditRiskAssessment
-    
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    
-    # Get preparation components
-    checklists = db.query(AuditPreparationChecklist).filter(
-        AuditPreparationChecklist.audit_id == audit_id
-    ).all()
-    
-    document_requests = db.query(AuditDocumentRequest).filter(
-        AuditDocumentRequest.audit_id == audit_id
-    ).all()
-    
-    risk_assessments = db.query(AuditRiskAssessment).filter(
-        AuditRiskAssessment.audit_id == audit_id
-    ).all()
-    
-    # Calculate overall preparation status
-    checklist_completion = sum(c.completion_percentage for c in checklists) / len(checklists) if checklists else 0
-    
-    document_completion = 0
-    if document_requests:
-        provided_docs = sum(1 for req in document_requests if req.status == "provided")
-        document_completion = (provided_docs / len(document_requests)) * 100
-    
-    risk_assessment_completion = 100 if risk_assessments else 0
-    
-    overall_completion = (checklist_completion + document_completion + risk_assessment_completion) / 3
-    
-    return {
-        "audit_id": audit_id,
-        "status": audit.status,
-        "preparation_completed": audit.preparation_completed,
-        "checklist_completion": checklist_completion,
-        "document_completion": document_completion,
-        "risk_assessment_completion": risk_assessment_completion,
-        "overall_completion": overall_completion,
-        "can_proceed_to_execution": overall_completion >= 80,
-        "checklists_count": len(checklists),
-        "document_requests_count": len(document_requests),
-        "risk_assessments_count": len(risk_assessments)
     }
 
 # ISO 19011 Clause 6.4 - Audit Execution
