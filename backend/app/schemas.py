@@ -116,20 +116,26 @@ class AuditProgrammeBase(BaseModel):
     programme_name: str
     programme_year: int
     programme_objectives: str
-    programme_manager_id: UUID
+    programme_manager_id: Optional[UUID] = None
     risk_assessment_completed: Optional[bool] = False
     risk_factors_considered: Optional[List[str]] = None
 
 class AuditProgrammeCreate(AuditProgrammeBase):
     pass
 
-class AuditProgrammeResponse(AuditProgrammeBase):
+class AuditProgrammeResponse(BaseModel):
     id: UUID
+    programme_name: str
+    programme_year: int
+    programme_objectives: str
+    programme_manager_id: Optional[UUID] = None
+    risk_assessment_completed: Optional[bool] = False
+    risk_factors_considered: Optional[List[str]] = None
     status: str
     total_planned_audits: int
     completed_audits: int
-    start_date: Optional[datetime]
-    end_date: Optional[datetime]
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
     created_at: datetime
     
     class Config:
