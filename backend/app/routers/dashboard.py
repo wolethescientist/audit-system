@@ -1,18 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
+from sqlalchemy.exc import ProgrammingError, OperationalError
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
+import logging
 from app.database import get_db
 from app.models import (
     Audit, AuditFinding, AuditFollowup, User, AuditStatus, FindingSeverity,
-    RiskAssessment, RiskCategory, CAPAItem, CAPAStatus, AuditChecklist,
-    ComplianceStatus, ISOFramework
+    RiskAssessment, RiskCategory, CAPAItem, CAPAStatus
 )
 from app.schemas import DashboardMetrics, RiskHeatmapData, ComplianceScores, CAPASummary
 from app.auth import get_current_user
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard"])
+
+# Try to import optional models that may not have tables yet
+try:
+    from app.models import AuditChecklist, ComplianceStatus, ISOFramework
+    HAS_COMPLIANCE_TABLES = True
+except ImportError:
+    HAS_COMPLIANCE_TABLES = False
 
 @router.get("/metrics", response_model=DashboardMetrics)
 def get_dashboard_metrics(
