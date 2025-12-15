@@ -426,7 +426,7 @@ class SystemIntegrationService:
             # Check for overdue CAPA items
             overdue_capa = db.query(CAPAItem).filter(
                 CAPAItem.due_date < datetime.utcnow(),
-                CAPAItem.status.notin_([CAPAStatus.CLOSED])
+                CAPAItem.status.notin_([CAPAStatus.CLOSED.value])
             ).count()
             
             if overdue_capa > 0:
@@ -435,7 +435,7 @@ class SystemIntegrationService:
             # Check for CAPA items without root cause analysis
             missing_rca = db.query(CAPAItem).filter(
                 CAPAItem.root_cause_analysis.is_(None),
-                CAPAItem.status != CAPAStatus.OPEN
+                CAPAItem.status != CAPAStatus.OPEN.value
             ).count()
             
             if missing_rca > 0:
