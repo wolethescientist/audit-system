@@ -437,7 +437,6 @@ export default function AuditInitiatePage() {
         <Button
           variant="outline"
           onClick={() => router.push(`/audits/${auditId}/team`)}
-          disabled={!initiationStatus?.can_proceed_to_preparation}
         >
           Assign Team
         </Button>
