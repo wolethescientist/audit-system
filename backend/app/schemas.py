@@ -185,6 +185,12 @@ class EvidenceResponse(BaseModel):
     uploaded_by_id: Optional[UUID]
     description: Optional[str]
     created_at: datetime
+    evidence_type: Optional[str] = "document"
+    file_hash: Optional[str] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    linked_checklist_id: Optional[UUID] = None
+    linked_finding_id: Optional[UUID] = None
     
     class Config:
         from_attributes = True

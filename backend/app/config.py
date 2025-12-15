@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     SYSTEM_INTEGRITY_CHECK_INTERVAL_HOURS: int = 24
     DATABASE_OPTIMIZATION_ENABLED: bool = True
     
+    # Supabase Storage Configuration
+    SUPABASE_URL: str
+    SUPABASE_ANON_KEY: str
+    SUPABASE_BUCKET_NAME: str = "audit-evidence"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

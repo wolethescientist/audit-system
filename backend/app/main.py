@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-from app.routers import auth, users, departments, audits, analytics, workflows, dashboard, audit_programmes, risks, capa, reports, documents, assets, vendors, gap_analysis, followups, rbac, system_integration
+from app.routers import auth, users, departments, audits, analytics, workflows, dashboard, audit_programmes, risks, capa, reports, documents, assets, vendors, gap_analysis, followups, rbac, system_integration, evidence
 from app.middleware.error_handling import ErrorHandlingMiddleware
 from app.services.performance_monitoring_service import performance_monitoring_service
 from app.services.system_integration_service import system_integration_service
@@ -91,6 +91,7 @@ app.include_router(gap_analysis.router)
 app.include_router(followups.router)
 app.include_router(rbac.router)
 app.include_router(system_integration.router)
+app.include_router(evidence.router)
 
 @app.get("/")
 async def root():
