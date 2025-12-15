@@ -159,23 +159,77 @@ def update_work_program(
     db.refresh(wp)
     return wp
 
-# Evidence
-@router.post("/{audit_id}/evidence", response_model=EvidenceResponse)
-def upload_evidence(
+# Evidence - Supabase Storage Integration
+from fastapi import UploadFile, File, Form
+
+@router.post("/{audit_id}/evidence/upload", response_model=EvidenceResponse)
+async def upload_evidence_file(
     audit_id: UUID,
-    evidence_data: EvidenceCreate,
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None),
+    evidence_type: Optional[str] = Form("document"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    evidence = AuditEvidence(
-        audit_id=audit_id,
-        uploaded_by_id=current_user.id,
-        **evidence_data.model_dump()
-    )
-    db.add(evidence)
-    db.commit()
-    db.refresh(evidence)
-    return evidence
+    """
+    Upload evidence file to Supabase Storage
+    ISO 19011 Clause 6.4.5 - Evidence collection with integrity checking
+    """
+    from app.services.supabase_storage_service import supabase_storage
+    
+    # Verify audit exists
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Validate file size (max 50MB)
+    max_size = 50 * 1024 * 1024
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
+    
+    try:
+        # Upload to Supabase Storage
+        upload_result = supabase_storage.upload_file(
+            file_content=file_content,
+            file_name=file.filename,
+            audit_id=str(audit_id),
+            user_id=str(current_user.id),
+            content_type=file.content_type
+        )
+        
+        if not upload_result.get("success"):
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload file: {upload_result.get('error')}"
+            )
+        
+        # Create evidence record in database
+        evidence = AuditEvidence(
+            audit_id=audit_id,
+            file_name=file.filename,
+            file_url=upload_result["file_url"],
+            uploaded_by_id=current_user.id,
+            description=description,
+            evidence_type=evidence_type,
+            file_hash=upload_result["file_hash"],
+            file_size=upload_result["file_size"],
+            mime_type=upload_result["mime_type"]
+        )
+        
+        db.add(evidence)
+        db.commit()
+        db.refresh(evidence)
+        
+        return evidence
+    except Exception as e:
+        import traceback
+        print(f"ERROR in upload_evidence_file: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to upload evidence: {str(e)}"
+        )
 
 @router.get("/{audit_id}/evidence", response_model=List[EvidenceResponse])
 def list_evidence(
@@ -183,8 +237,56 @@ def list_evidence(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    evidence = db.query(AuditEvidence).filter(AuditEvidence.audit_id == audit_id).all()
-    return evidence
+    """
+    List all evidence for an audit
+    """
+    try:
+        evidence = db.query(AuditEvidence).filter(
+            AuditEvidence.audit_id == audit_id
+        ).order_by(AuditEvidence.created_at.desc()).all()
+        return evidence
+    except Exception as e:
+        import traceback
+        print(f"ERROR in list_evidence: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list evidence: {str(e)}"
+        )
+
+@router.delete("/{audit_id}/evidence/{evidence_id}")
+def delete_evidence(
+    audit_id: UUID,
+    evidence_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+):
+    """
+    Delete evidence file and record
+    """
+    from app.services.supabase_storage_service import supabase_storage
+    
+    evidence = db.query(AuditEvidence).filter(
+        AuditEvidence.id == evidence_id,
+        AuditEvidence.audit_id == audit_id
+    ).first()
+    
+    if not evidence:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+    
+    try:
+        # Extract file path from URL and delete from Supabase
+        if evidence.file_url and supabase_storage.bucket_name in evidence.file_url:
+            file_path = evidence.file_url.split(f"/{supabase_storage.bucket_name}/")[-1]
+            supabase_storage.delete_file(file_path)
+    except Exception as e:
+        print(f"Warning: Failed to delete file from Supabase: {e}")
+    
+    # Delete from database
+    db.delete(evidence)
+    db.commit()
+    
+    return {"success": True, "message": "Evidence deleted successfully"}
 
 # Findings
 @router.post("/{audit_id}/findings", response_model=FindingResponse)

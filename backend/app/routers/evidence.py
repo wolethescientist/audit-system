@@ -184,11 +184,20 @@ def list_evidence(
     """
     List all evidence for an audit
     """
-    evidence_list = db.query(AuditEvidence).filter(
-        AuditEvidence.audit_id == audit_id
-    ).order_by(AuditEvidence.created_at.desc()).all()
-    
-    return evidence_list
+    try:
+        evidence_list = db.query(AuditEvidence).filter(
+            AuditEvidence.audit_id == audit_id
+        ).order_by(AuditEvidence.created_at.desc()).all()
+        
+        return evidence_list
+    except Exception as e:
+        import traceback
+        print(f"ERROR in list_evidence: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list evidence: {str(e)}"
+        )
 
 @router.delete("/{audit_id}/evidence/{evidence_id}")
 def delete_evidence(

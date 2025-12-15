@@ -2,20 +2,52 @@
 Supabase Storage Service for Evidence File Management
 Handles file uploads, downloads, and management in Supabase S3 bucket
 """
-from supabase import create_client, Client
 from typing import Optional, BinaryIO
 import hashlib
 from datetime import datetime
-from app.config import settings
 import mimetypes
+
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+    Client = None
 
 class SupabaseStorageService:
     def __init__(self):
-        self.supabase: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_ANON_KEY
-        )
-        self.bucket_name = settings.SUPABASE_BUCKET_NAME
+        self._supabase = None
+        self._bucket_name = None
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization of Supabase client"""
+        if self._initialized:
+            return
+        
+        if not SUPABASE_AVAILABLE:
+            raise ImportError("supabase package not installed. Run: pip install supabase")
+        
+        try:
+            from app.config import settings
+            self._supabase = create_client(
+                settings.SUPABASE_URL,
+                settings.SUPABASE_ANON_KEY
+            )
+            self._bucket_name = settings.SUPABASE_BUCKET_NAME
+            self._initialized = True
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize Supabase client: {e}")
+    
+    @property
+    def supabase(self):
+        self._ensure_initialized()
+        return self._supabase
+    
+    @property
+    def bucket_name(self):
+        self._ensure_initialized()
+        return self._bucket_name
     
     def upload_file(
         self,
