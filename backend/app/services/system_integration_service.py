@@ -376,9 +376,9 @@ class SystemIntegrationService:
             if incomplete_audits > 0:
                 issues.append(f"{incomplete_audits} audits missing required ISO 19011 fields")
             
-            # Check for audits with invalid status transitions
+            # Check for audits with invalid status transitions (using uppercase enum values)
             invalid_status = db.query(Audit).filter(
-                Audit.status.notin_(['planned', 'initiated', 'preparation', 'executing', 'reporting', 'followup', 'closed'])
+                Audit.status.notin_(['PLANNED', 'INITIATED', 'PREPARATION', 'EXECUTING', 'REPORTING', 'FOLLOWUP', 'CLOSED'])
             ).count()
             
             if invalid_status > 0:
@@ -426,7 +426,7 @@ class SystemIntegrationService:
             # Check for overdue CAPA items
             overdue_capa = db.query(CAPAItem).filter(
                 CAPAItem.due_date < datetime.utcnow(),
-                CAPAItem.status.notin_([CAPAStatus.CLOSED.value])
+                CAPAItem.status.notin_([CAPAStatus.CLOSED])
             ).count()
             
             if overdue_capa > 0:
@@ -435,7 +435,7 @@ class SystemIntegrationService:
             # Check for CAPA items without root cause analysis
             missing_rca = db.query(CAPAItem).filter(
                 CAPAItem.root_cause_analysis.is_(None),
-                CAPAItem.status != CAPAStatus.OPEN.value
+                CAPAItem.status != CAPAStatus.OPEN
             ).count()
             
             if missing_rca > 0:
