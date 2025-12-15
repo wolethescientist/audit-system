@@ -1947,3 +1947,63 @@ def finalize_audit(
     db.commit()
     
     return {"success": True, "message": "Audit finalized and closed"}
+
+
+# Risk Assessments for Audit Preparation
+@router.get("/{audit_id}/risk-assessments")
+def get_risk_assessments(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get risk assessments for an audit (ISO 19011 Clause 6.3 - Preparation)
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # For now, return empty list - risk assessments can be stored in a separate table
+    # or as JSON in the audit record
+    return []
+
+
+@router.post("/{audit_id}/risk-assessment")
+def create_risk_assessment(
+    audit_id: UUID,
+    risk_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+):
+    """
+    Create a risk assessment for audit preparation (ISO 19011 Clause 6.3)
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Calculate risk score
+    likelihood = risk_data.get("likelihood", 1)
+    impact = risk_data.get("impact", 1)
+    risk_score = likelihood * impact
+    
+    # Determine risk level
+    if risk_score >= 20:
+        risk_level = "critical"
+    elif risk_score >= 12:
+        risk_level = "high"
+    elif risk_score >= 6:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+    
+    # For now, return the assessment with calculated values
+    # In a full implementation, this would be stored in a database table
+    return {
+        "success": True,
+        "risk_assessment": {
+            **risk_data,
+            "risk_score": risk_score,
+            "risk_level": risk_level
+        }
+    }
