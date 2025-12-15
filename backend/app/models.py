@@ -1331,8 +1331,8 @@ class UserRoleAssignment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id], viewonly=False)
     role = relationship("RoleMatrix", back_populates="user_role_assignments")
-    assigned_by = relationship("User", foreign_keys=[assigned_by_id])
-    approved_by = relationship("User", foreign_keys=[approved_by_id])
-    deactivated_by = relationship("User", foreign_keys=[deactivated_by_id])
+    assigned_by = relationship("User", foreign_keys=[assigned_by_id], viewonly=False)
+    approved_by = relationship("User", foreign_keys=[approved_by_id], viewonly=False)
+    deactivated_by = relationship("User", foreign_keys=[deactivated_by_id], viewonly=False)
