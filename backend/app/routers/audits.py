@@ -535,18 +535,28 @@ def initiate_audit(
     ISO 19011 Clause 6.2 - Initiate the audit
     Establishes audit objectives, scope, criteria, and team assignment
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     audit = db.query(Audit).filter(Audit.id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found")
     
-    if audit.status != AuditStatus.PLANNED:
-        raise HTTPException(status_code=400, detail="Audit must be in planned status to initiate")
+    logger.info(f"Audit initiation - ID: {audit_id}, Current status: {audit.status}, Type: {type(audit.status)}")
+    
+    # Allow initiation from PLANNED or INITIATED status (for updates)
+    # Handle both enum and string comparison for database compatibility
+    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+    allowed_statuses = ['PLANNED', 'INITIATED', 'planned', 'initiated']
+    
+    if status_str not in allowed_statuses:
+        raise HTTPException(status_code=400, detail=f"Audit must be in planned or initiated status to initiate. Current status: {status_str}")
     
     # Validate required ISO 19011 fields
     required_fields = ["audit_objectives", "audit_criteria", "audit_scope_detailed", "audit_methodology"]
-    for field in required_fields:
-        if not initiation_data.get(field):
-            raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+    missing_fields = [field for field in required_fields if not initiation_data.get(field)]
+    if missing_fields:
+        raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing_fields)}")
     
     # Update audit with initiation data
     for key, value in initiation_data.items():
@@ -563,7 +573,8 @@ def initiate_audit(
     return {
         "success": True, 
         "message": "Audit initiation completed per ISO 19011 Clause 6.2",
-        "audit": audit
+        "audit_id": str(audit.id),
+        "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
     }
 
 @router.post("/{audit_id}/assign-team")
