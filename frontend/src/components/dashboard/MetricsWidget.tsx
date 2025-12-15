@@ -54,7 +54,7 @@ export function MetricsWidget() {
   const { data: metrics, isLoading, error } = useQuery<DashboardMetrics>({
     queryKey: ['dashboard-metrics'],
     queryFn: async () => {
-      const response = await api.get('/dashboard/metrics');
+      const response = await api.get('/api/v1/dashboard/metrics');
       return response.data;
     },
     refetchInterval: 30000, // Refresh every 30 seconds for real-time updates

@@ -24,7 +24,7 @@ export function CAPATracker({ className = '' }: CAPATrackerProps) {
   const { data: capaData, isLoading, error } = useQuery<CAPASummary>({
     queryKey: ['capa-summary'],
     queryFn: async () => {
-      const response = await api.get('/dashboard/capa-summary');
+      const response = await api.get('/api/v1/dashboard/capa-summary');
       return response.data;
     },
     refetchInterval: 30000, // Refresh every 30 seconds

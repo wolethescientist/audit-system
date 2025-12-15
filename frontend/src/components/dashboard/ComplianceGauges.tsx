@@ -128,7 +128,7 @@ export function ComplianceGauges({ className = '' }: ComplianceGaugesProps) {
   const { data: complianceData, isLoading, error } = useQuery<ComplianceScores>({
     queryKey: ['compliance-scores'],
     queryFn: async () => {
-      const response = await api.get('/dashboard/compliance-scores');
+      const response = await api.get('/api/v1/dashboard/compliance-scores');
       return response.data;
     },
     refetchInterval: 60000, // Refresh every minute

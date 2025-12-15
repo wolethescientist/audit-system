@@ -83,7 +83,7 @@ export function RiskHeatmapChart({ className = '' }: RiskHeatmapChartProps) {
   const { data: heatmapData, isLoading, error } = useQuery<RiskHeatmapData[]>({
     queryKey: ['risk-heatmap'],
     queryFn: async () => {
-      const response = await api.get('/dashboard/risk-heatmap');
+      const response = await api.get('/api/v1/dashboard/risk-heatmap');
       return response.data;
     },
     refetchInterval: 60000, // Refresh every minute
