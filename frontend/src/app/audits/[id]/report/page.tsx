@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { api } from '@/lib/api';
 // Simple icon components as fallbacks
 const ArrowLeft = ({ className }: { className?: string }) => <span className={className}>←</span>;
 const FileText = ({ className }: { className?: string }) => <span className={className}>📄</span>;
@@ -39,17 +40,8 @@ export default function AuditReportPage() {
 
   const fetchAudit = async () => {
     try {
-      const response = await fetch(`/api/v1/audits/${auditId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/audits/${auditId}`);
+      const data = response.data;
       setAudit(data);
 
       // Check if audit is ready for reporting

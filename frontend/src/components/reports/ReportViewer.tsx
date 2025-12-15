@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { api } from '@/lib/api';
 
 
 interface ReportViewerProps {
@@ -59,17 +60,8 @@ export default function ReportViewer({
     setError(null);
 
     try {
-      const response = await fetch(`/api/v1/reports/${reportId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch report');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/reports/${reportId}`);
+      const data = response.data;
       setReportData(data);
 
       // Fetch audit data
@@ -91,17 +83,8 @@ export default function ReportViewer({
     setError(null);
 
     try {
-      const response = await fetch(`/api/v1/reports/audit/${auditId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit reports');
-      }
-
-      const data = await response.json();
+      const response = await api.get(`/reports/audit/${auditId}`);
+      const data = response.data;
       
       if (data.data.reports && data.data.reports.length > 0) {
         // Get the latest report
@@ -128,16 +111,8 @@ export default function ReportViewer({
 
   const fetchAuditData = async (auditId: string) => {
     try {
-      const response = await fetch(`/api/v1/audits/${auditId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAuditData(data);
-      }
+      const response = await api.get(`/audits/${auditId}`);
+      setAuditData(response.data);
     } catch (err) {
       console.error('Failed to fetch audit data:', err);
     }
@@ -147,19 +122,12 @@ export default function ReportViewer({
     if (!reportData) return;
 
     try {
-      const response = await fetch(`/api/v1/reports/${reportData.id}/download/${format}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await api.get(`/reports/${reportData.id}/download/${format}`, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to download ${format.toUpperCase()} report`);
-      }
-
       // Create blob and download
-      const blob = await response.blob();
+      const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

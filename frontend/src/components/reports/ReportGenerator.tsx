@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { api } from '@/lib/api';
 
 
 interface ReportGeneratorProps {
@@ -68,18 +69,7 @@ export default function ReportGenerator({
         message: 'Preparing audit data for AI analysis...'
       });
 
-      const response = await fetch(`/api/v1/reports/generate/${auditId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to generate report');
-      }
+      const response = await api.post(`/reports/generate/${auditId}`);
 
       setGenerationProgress({
         step: 'Processing',
@@ -87,7 +77,7 @@ export default function ReportGenerator({
         message: 'AI is analyzing audit data and generating ISO 19011 compliant report...'
       });
 
-      const result = await response.json();
+      const result = response.data;
       
       setGenerationProgress({
         step: 'Finalizing',
@@ -118,19 +108,12 @@ export default function ReportGenerator({
     if (!reportData) return;
 
     try {
-      const response = await fetch(`/api/v1/reports/${reportData.report_id}/download/${format}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await api.get(`/reports/${reportData.report_id}/download/${format}`, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to download ${format.toUpperCase()} report`);
-      }
-
       // Create blob and download
-      const blob = await response.blob();
+      const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
