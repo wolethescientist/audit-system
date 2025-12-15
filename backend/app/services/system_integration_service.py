@@ -25,7 +25,7 @@ from functools import wraps
 
 from app.models import (
     SystemAuditLog, User, Audit, RiskAssessment, CAPAItem, 
-    DocumentRepository, Asset, Vendor, GapAnalysis
+    DocumentRepository, Asset, Vendor, GapAnalysis, CAPAStatus
 )
 from app.database import SessionLocal, engine
 
@@ -426,7 +426,7 @@ class SystemIntegrationService:
             # Check for overdue CAPA items
             overdue_capa = db.query(CAPAItem).filter(
                 CAPAItem.due_date < datetime.utcnow(),
-                CAPAItem.status.notin_(['closed'])
+                CAPAItem.status.notin_([CAPAStatus.CLOSED])
             ).count()
             
             if overdue_capa > 0:
@@ -435,7 +435,7 @@ class SystemIntegrationService:
             # Check for CAPA items without root cause analysis
             missing_rca = db.query(CAPAItem).filter(
                 CAPAItem.root_cause_analysis.is_(None),
-                CAPAItem.status != 'open'
+                CAPAItem.status != CAPAStatus.OPEN
             ).count()
             
             if missing_rca > 0:
