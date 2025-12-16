@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import google.generativeai as genai
 from sqlalchemy.orm import Session
-from app.models import Audit, AuditFinding, AuditEvidence, AuditChecklist, User, Department, CAPAItem
+from app.models import Audit, AuditFinding, AuditEvidence, AuditChecklist, User, Department, CAPAItem, AuditTeam
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
