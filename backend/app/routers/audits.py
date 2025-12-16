@@ -1098,14 +1098,35 @@ def get_execution_status(
     
     try:
         # Count execution activities
-        evidence_count = db.query(AuditEvidence).filter(AuditEvidence.audit_id == audit_id).count()
+        evidence_items = db.query(AuditEvidence).filter(AuditEvidence.audit_id == audit_id).all()
+        evidence_count = len(evidence_items)
         findings_count = db.query(AuditFinding).filter(AuditFinding.audit_id == audit_id).count()
         
-        # Try to count interview notes (table may not exist)
+        # Try to count interview notes
         interview_notes_count = 0
         try:
             from app.models import AuditInterviewNote
             interview_notes_count = db.query(AuditInterviewNote).filter(AuditInterviewNote.audit_id == audit_id).count()
+        except Exception:
+            pass
+        
+        # Try to count observations
+        observations_count = 0
+        try:
+            from app.models import AuditObservation
+            observations_count = db.query(AuditObservation).filter(AuditObservation.audit_id == audit_id).count()
+        except Exception:
+            pass
+        
+        # Try to count sampling plans
+        sampling_plans_count = 0
+        sampling_completion = 0
+        try:
+            from app.models import AuditSampling
+            sampling_plans = db.query(AuditSampling).filter(AuditSampling.audit_id == audit_id).all()
+            sampling_plans_count = len(sampling_plans)
+            if sampling_plans:
+                sampling_completion = sum(s.completion_percentage or 0 for s in sampling_plans) / len(sampling_plans)
         except Exception:
             pass
         
@@ -1122,9 +1143,13 @@ def get_execution_status(
         except Exception:
             pass
         
+        # Calculate evidence integrity
+        evidence_with_integrity = sum(1 for e in evidence_items if e.file_hash)
+        evidence_integrity_percentage = (evidence_with_integrity / evidence_count * 100) if evidence_count > 0 else 0
+        
         # Check execution completeness per ISO 19011 Clause 6.4
         execution_checklist = {
-            "opening_meeting_conducted": True,  # Simplified - assume conducted when execution starts
+            "opening_meeting_conducted": True,
             "document_review_completed": evidence_count > 0,
             "interviews_conducted": interview_notes_count > 0,
             "evidence_collected": evidence_count > 0,
@@ -1137,32 +1162,46 @@ def get_execution_status(
         completion_percentage = sum(execution_checklist.values()) / len(execution_checklist) * 100
         checklist_completion_percentage = (completed_checklist_items / total_checklist_items * 100) if total_checklist_items > 0 else 0
         
+        # Can proceed if there's at least some evidence collected
+        can_proceed = interview_notes_count > 0 or observations_count > 0 or evidence_count > 0
+        
         return {
             "audit_id": str(audit_id),
             "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status),
+            "execution_completed": audit.execution_completed,
             "execution_checklist": execution_checklist,
             "completion_percentage": completion_percentage,
             "evidence_count": evidence_count,
+            "evidence_items_count": evidence_count,
             "interview_notes_count": interview_notes_count,
+            "observations_count": observations_count,
+            "sampling_plans_count": sampling_plans_count,
+            "sampling_completion": sampling_completion,
+            "evidence_integrity_percentage": evidence_integrity_percentage,
             "findings_count": findings_count,
             "checklist_completion": {
                 "total_items": total_checklist_items,
                 "completed_items": completed_checklist_items,
                 "completion_percentage": checklist_completion_percentage
             },
-            "can_proceed_to_reporting": (audit.execution_completed if audit.execution_completed else False) and completion_percentage >= 87.5
+            "can_proceed_to_reporting": can_proceed
         }
     except Exception as e:
         import logging
         logging.error(f"Error in execution-status: {str(e)}")
-        # Return a default response if there's an error
         return {
             "audit_id": str(audit_id),
             "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status),
+            "execution_completed": False,
             "execution_checklist": {},
             "completion_percentage": 0,
             "evidence_count": 0,
+            "evidence_items_count": 0,
             "interview_notes_count": 0,
+            "observations_count": 0,
+            "sampling_plans_count": 0,
+            "sampling_completion": 0,
+            "evidence_integrity_percentage": 0,
             "findings_count": 0,
             "checklist_completion": {
                 "total_items": 0,
@@ -1827,69 +1866,6 @@ def upload_enhanced_evidence(
         "success": True,
         "message": "Enhanced evidence uploaded with integrity verification",
         "evidence": evidence
-    }
-
-@router.get("/{audit_id}/execution-status")
-def get_execution_status(
-    audit_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get comprehensive execution status per ISO 19011 Clause 6.4
-    """
-    from app.models import AuditInterviewNote, AuditSampling, AuditObservation
-    
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    
-    # Get execution components
-    interview_notes = db.query(AuditInterviewNote).filter(
-        AuditInterviewNote.audit_id == audit_id
-    ).all()
-    
-    sampling_plans = db.query(AuditSampling).filter(
-        AuditSampling.audit_id == audit_id
-    ).all()
-    
-    observations = db.query(AuditObservation).filter(
-        AuditObservation.audit_id == audit_id
-    ).all()
-    
-    evidence_items = db.query(AuditEvidence).filter(
-        AuditEvidence.audit_id == audit_id
-    ).all()
-    
-    findings = db.query(AuditFinding).filter(
-        AuditFinding.audit_id == audit_id
-    ).all()
-    
-    # Calculate execution progress
-    total_sampling_completion = 0
-    if sampling_plans:
-        total_sampling_completion = sum(s.completion_percentage for s in sampling_plans) / len(sampling_plans)
-    
-    # Use file_hash as proxy for integrity verification (integrity_verified field doesn't exist)
-    evidence_with_integrity = sum(1 for e in evidence_items if e.file_hash)
-    evidence_integrity_percentage = (evidence_with_integrity / len(evidence_items) * 100) if evidence_items else 0
-    
-    return {
-        "audit_id": audit_id,
-        "status": audit.status,
-        "execution_completed": audit.execution_completed,
-        "interview_notes_count": len(interview_notes),
-        "sampling_plans_count": len(sampling_plans),
-        "sampling_completion": total_sampling_completion,
-        "observations_count": len(observations),
-        "evidence_items_count": len(evidence_items),
-        "evidence_integrity_percentage": evidence_integrity_percentage,
-        "findings_count": len(findings),
-        "can_proceed_to_reporting": (
-            len(interview_notes) > 0 or 
-            len(observations) > 0 or 
-            len(evidence_items) > 0
-        )
     }
 
 def generate_sample_items(method: str, population_size: int, sample_size: int, criteria: list) -> list:

@@ -1167,7 +1167,7 @@ export default function AuditExecutePage() {
         <Button
           variant="outline"
           onClick={() => router.push(`/audits/${auditId}/report`)}
-          disabled={!executionStatus?.can_proceed_to_reporting}
+          disabled={!(executionStatus?.can_proceed_to_reporting || interviewNotes.length > 0 || observations.length > 0 || evidenceItems.length > 0)}
         >
           Proceed to Reporting
         </Button>
