@@ -213,10 +213,9 @@ class AuditInterviewNote(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"), nullable=False)
     
-    # Interview Details (ISO 19011 Clause 6.4.7)
-    interviewee_name = Column(String, nullable=False)
-    interviewee_position = Column(String)
-    interviewee_department = Column(String)
+    # Interview Details - matches actual database columns
+    interview_title = Column(String, nullable=False)
+    interviewee_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     interviewer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     
     # Interview Context
@@ -224,26 +223,23 @@ class AuditInterviewNote(Base):
     interview_location = Column(String)
     interview_duration_minutes = Column(Integer)
     
-    # Interview Content (ISO 19011 Clause 6.4.5)
-    interview_purpose = Column(Text)  # What was being investigated
-    questions_asked = Column(JSON)    # Array of questions
-    responses_received = Column(JSON) # Array of responses
-    key_points = Column(Text)         # Summary of key points
+    # Interview Content
+    interview_objective = Column(Text)
+    questions_asked = Column(JSON)
+    key_findings = Column(Text)
+    follow_up_actions = Column(JSON)
+    interview_method = Column(String)
     
-    # Evidence and Findings Links
-    related_checklist_items = Column(JSON)  # Array of checklist item IDs
-    related_findings = Column(JSON)         # Array of finding IDs
-    supporting_evidence = Column(JSON)      # Array of evidence IDs
+    # Additional fields
+    witnesses_present = Column(JSON)
+    audio_recording_url = Column(String)
+    transcript_url = Column(String)
+    supporting_documents = Column(JSON)
     
-    # ISO 19011 Compliance Fields
-    objective_evidence_obtained = Column(Boolean, default=False)
-    follow_up_required = Column(Boolean, default=False)
-    follow_up_notes = Column(Text)
-    
-    # Verification and Approval
-    notes_verified_by_interviewee = Column(Boolean, default=False)
-    verification_date = Column(DateTime)
-    verification_method = Column(String)  # email, signature, verbal
+    # Approval
+    notes_reviewed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    notes_approved = Column(Boolean, default=False)
+    interviewee_confirmation = Column(Boolean, default=False)
     
     # Metadata
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
@@ -252,7 +248,9 @@ class AuditInterviewNote(Base):
     
     # Relationships
     audit = relationship("Audit")
+    interviewee = relationship("User", foreign_keys=[interviewee_id])
     interviewer = relationship("User", foreign_keys=[interviewer_id])
+    notes_reviewed_by = relationship("User", foreign_keys=[notes_reviewed_by_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
 
 class AuditReport(Base):

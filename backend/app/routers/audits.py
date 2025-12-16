@@ -994,23 +994,19 @@ def create_interview_note(
     
     interview_note = AuditInterviewNote(
         audit_id=audit_id,
-        interviewee_name=interview_data.get("interviewee_name"),
-        interviewee_position=interview_data.get("interviewee_position"),
-        interviewee_department=interview_data.get("interviewee_department"),
+        interview_title=interview_data.get("interview_title", "Interview"),
+        interviewee_id=interview_data.get("interviewee_id"),
         interviewer_id=current_user.id,
         interview_date=datetime.fromisoformat(interview_data.get("interview_date")) if interview_data.get("interview_date") else datetime.utcnow(),
         interview_location=interview_data.get("interview_location"),
         interview_duration_minutes=interview_data.get("interview_duration_minutes"),
-        interview_purpose=interview_data.get("interview_purpose"),
+        interview_objective=interview_data.get("interview_objective"),
         questions_asked=interview_data.get("questions_asked", []),
-        responses_received=interview_data.get("responses_received", []),
-        key_points=interview_data.get("key_points"),
-        related_checklist_items=interview_data.get("related_checklist_items", []),
-        related_findings=interview_data.get("related_findings", []),
-        supporting_evidence=interview_data.get("supporting_evidence", []),
-        objective_evidence_obtained=interview_data.get("objective_evidence_obtained", False),
-        follow_up_required=interview_data.get("follow_up_required", False),
-        follow_up_notes=interview_data.get("follow_up_notes"),
+        key_findings=interview_data.get("key_findings"),
+        follow_up_actions=interview_data.get("follow_up_actions", []),
+        interview_method=interview_data.get("interview_method", "structured"),
+        witnesses_present=interview_data.get("witnesses_present", []),
+        supporting_documents=interview_data.get("supporting_documents", []),
         created_by_id=current_user.id
     )
     
