@@ -124,6 +124,18 @@ export default function AuditExecutePage() {
     follow_up_actions: []
   });
 
+  const [newEvidence, setNewEvidence] = useState<{
+    file: File | null;
+    description: string;
+    evidence_type: string;
+    evidence_source: string;
+  }>({
+    file: null,
+    description: '',
+    evidence_type: 'document',
+    evidence_source: 'auditee'
+  });
+
   useEffect(() => {
     fetchAuditDetails();
     fetchExecutionStatus();
@@ -288,6 +300,44 @@ export default function AuditExecutePage() {
       await fetchExecutionStatus();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create observation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadEvidence = async () => {
+    if (!newEvidence.file) {
+      setError('Please select a file to upload');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', newEvidence.file);
+      formData.append('description', newEvidence.description);
+      formData.append('evidence_type', newEvidence.evidence_type);
+      formData.append('evidence_source', newEvidence.evidence_source);
+
+      await api.post(`/audits/${auditId}/evidence/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setSuccess('Evidence uploaded successfully');
+      setNewEvidence({
+        file: null,
+        description: '',
+        evidence_type: 'document',
+        evidence_source: 'auditee'
+      });
+      // Reset file input
+      const fileInput = document.getElementById('evidence-file') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+      await fetchEvidenceItems();
+      await fetchExecutionStatus();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to upload evidence');
     } finally {
       setLoading(false);
     }
@@ -1097,7 +1147,84 @@ export default function AuditExecutePage() {
                 Enhanced Evidence Management
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {/* Evidence Upload Form */}
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h3 className="font-semibold mb-4">Upload Evidence</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="evidence-file">Select File *</Label>
+                    <Input
+                      id="evidence-file"
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setNewEvidence(prev => ({ ...prev, file }));
+                        }
+                      }}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <Label htmlFor="evidence-description">Description</Label>
+                    <Textarea
+                      id="evidence-description"
+                      value={newEvidence.description}
+                      onChange={(e) => setNewEvidence(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe the evidence and its relevance to the audit"
+                      rows={2}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="evidence-type">Evidence Type</Label>
+                    <Select
+                      value={newEvidence.evidence_type}
+                      onValueChange={(value) => setNewEvidence(prev => ({ ...prev, evidence_type: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="document">Document</SelectItem>
+                        <SelectItem value="record">Record</SelectItem>
+                        <SelectItem value="interview">Interview Transcript</SelectItem>
+                        <SelectItem value="observation">Observation Notes</SelectItem>
+                        <SelectItem value="photo">Photo/Image</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="evidence-source">Evidence Source</Label>
+                    <Select
+                      value={newEvidence.evidence_source}
+                      onValueChange={(value) => setNewEvidence(prev => ({ ...prev, evidence_source: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auditee">Auditee</SelectItem>
+                        <SelectItem value="auditor">Auditor</SelectItem>
+                        <SelectItem value="system">System Generated</SelectItem>
+                        <SelectItem value="external">External Source</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end mt-4">
+                  <Button onClick={uploadEvidence} disabled={loading || !newEvidence.file}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Evidence
+                  </Button>
+                </div>
+              </div>
+
+              {/* Evidence List */}
               <div className="space-y-4">
                 {evidenceItems.map((evidence) => (
                   <div key={evidence.id} className="border rounded-lg p-4">
