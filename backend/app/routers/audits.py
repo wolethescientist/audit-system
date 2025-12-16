@@ -779,45 +779,118 @@ def get_preparation_status(
 ):
     """
     Get ISO 19011 audit preparation status and requirements
+    Flexible approach - items are optional, not mandatory
     """
     audit = db.query(Audit).filter(Audit.id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found")
     
-    # Count checklist items
-    from app.models import AuditChecklist
-    checklist_count = db.query(AuditChecklist).filter(AuditChecklist.audit_id == audit_id).count()
+    # Import models
+    from app.models import AuditChecklist, AuditPreparationChecklist, AuditDocumentRequest, AuditRiskAssessment
     
-    # Count document requests (using queries as proxy)
-    document_requests_count = db.query(AuditQuery).filter(
-        AuditQuery.audit_id == audit_id,
-        AuditQuery.message.like("Document Request:%")
-    ).count()
+    # ===== CHECKLIST COMPLETION =====
+    # Check for preparation checklists (the new model)
+    prep_checklists = db.query(AuditPreparationChecklist).filter(
+        AuditPreparationChecklist.audit_id == audit_id
+    ).all()
     
-    # Count work program items
+    total_checklist_items = 0
+    completed_checklist_items = 0
+    
+    for checklist in prep_checklists:
+        if checklist.checklist_items:
+            items = checklist.checklist_items if isinstance(checklist.checklist_items, list) else []
+            total_checklist_items += len(items)
+            completed_checklist_items += sum(1 for item in items if item.get('completed', False))
+    
+    # Calculate checklist completion (default to 100% if no checklists - means N/A)
+    if total_checklist_items > 0:
+        checklist_completion = (completed_checklist_items / total_checklist_items) * 100
+    else:
+        checklist_completion = 100  # No checklists = not applicable = 100%
+    
+    # ===== DOCUMENT REQUESTS COMPLETION =====
+    document_requests = db.query(AuditDocumentRequest).filter(
+        AuditDocumentRequest.audit_id == audit_id
+    ).all()
+    
+    total_doc_requests = len(document_requests)
+    received_doc_requests = sum(1 for doc in document_requests if doc.status in ['provided', 'received', 'not_applicable'])
+    
+    # Calculate document completion (default to 100% if no requests - means N/A)
+    if total_doc_requests > 0:
+        document_completion = (received_doc_requests / total_doc_requests) * 100
+    else:
+        document_completion = 100  # No document requests = not applicable = 100%
+    
+    # ===== RISK ASSESSMENT COMPLETION =====
+    risk_assessments = db.query(AuditRiskAssessment).filter(
+        AuditRiskAssessment.audit_id == audit_id
+    ).all()
+    
+    total_risk_assessments = len(risk_assessments)
+    # Risk assessment is complete if it exists (has risk_area and risk_description)
+    completed_risk_assessments = sum(1 for ra in risk_assessments if ra.risk_area and ra.risk_description)
+    
+    # Calculate risk assessment completion (default to 100% if none - means N/A)
+    if total_risk_assessments > 0:
+        risk_assessment_completion = (completed_risk_assessments / total_risk_assessments) * 100
+    else:
+        risk_assessment_completion = 100  # No risk assessments = not applicable = 100%
+    
+    # ===== OVERALL COMPLETION =====
+    # Calculate overall as average of the three areas
+    overall_completion = (checklist_completion + document_completion + risk_assessment_completion) / 3
+    
+    # ===== LEGACY COUNTS (for backward compatibility) =====
+    legacy_checklist_count = db.query(AuditChecklist).filter(AuditChecklist.audit_id == audit_id).count()
     work_program_count = db.query(AuditWorkProgram).filter(AuditWorkProgram.audit_id == audit_id).count()
     
-    # Check preparation completeness per ISO 19011 Clause 6.3
+    # Check preparation completeness per ISO 19011 Clause 6.3 (flexible approach)
     preparation_checklist = {
-        "audit_plan_prepared": bool(audit.audit_methodology),  # Using methodology as proxy for audit plan
-        "checklist_generated": checklist_count > 0,
-        "document_requests_sent": document_requests_count > 0,
-        "work_documents_prepared": work_program_count > 0,
-        "team_briefed": audit.audit_team_competency_verified,  # Using competency verification as proxy
-        "preparation_completed": audit.preparation_completed
+        "audit_plan_prepared": bool(audit.audit_methodology),
+        "checklist_generated": total_checklist_items > 0 or legacy_checklist_count > 0,
+        "document_requests_handled": total_doc_requests == 0 or document_completion >= 50,  # Optional
+        "risk_assessment_done": total_risk_assessments == 0 or risk_assessment_completion >= 50,  # Optional
+        "work_documents_prepared": work_program_count > 0 or True,  # Optional
+        "team_briefed": audit.audit_team_competency_verified or True,  # Optional
     }
     
-    completion_percentage = sum(preparation_checklist.values()) / len(preparation_checklist) * 100
+    # Flexible: Can proceed if at least one meaningful activity is done
+    # OR if user explicitly marked preparation as complete
+    has_any_preparation_activity = (
+        total_checklist_items > 0 or 
+        total_doc_requests > 0 or 
+        total_risk_assessments > 0 or
+        legacy_checklist_count > 0 or
+        work_program_count > 0
+    )
+    
+    # Allow proceeding if:
+    # 1. User marked preparation_completed = True, OR
+    # 2. At least one preparation activity exists and overall completion >= 50%
+    can_proceed = (
+        audit.preparation_completed or 
+        (has_any_preparation_activity and overall_completion >= 50) or
+        audit.initiation_completed  # If initiation is done, allow proceeding
+    )
     
     return {
-        "audit_id": audit_id,
-        "status": audit.status,
+        "audit_id": str(audit_id),
+        "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status),
         "preparation_checklist": preparation_checklist,
-        "completion_percentage": completion_percentage,
-        "checklist_items_count": checklist_count,
-        "document_requests_count": document_requests_count,
+        "overall_completion": round(overall_completion, 1),
+        "checklist_completion": round(checklist_completion, 1),
+        "document_completion": round(document_completion, 1),
+        "risk_assessment_completion": round(risk_assessment_completion, 1),
+        "checklist_items_count": total_checklist_items,
+        "completed_checklist_items": completed_checklist_items,
+        "document_requests_count": total_doc_requests,
+        "received_documents_count": received_doc_requests,
+        "risk_assessments_count": total_risk_assessments,
         "work_program_items_count": work_program_count,
-        "can_proceed_to_execution": audit.preparation_completed and completion_percentage >= 83.3  # 5/6 items
+        "can_proceed_to_execution": can_proceed,
+        "preparation_completed": audit.preparation_completed
     }
 
 # ISO 19011 Clause 6.4 - Audit Execution
@@ -1339,6 +1412,23 @@ def create_audit_risk_assessment(
         "assessment": risk_assessment
     }
 
+@router.get("/{audit_id}/risk-assessments")
+def get_audit_risk_assessments(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all risk assessments for an audit
+    """
+    from app.models import AuditRiskAssessment
+    
+    assessments = db.query(AuditRiskAssessment).filter(
+        AuditRiskAssessment.audit_id == audit_id
+    ).all()
+    
+    return assessments
+
 # ISO 19011 Clause 6.4 - Audit Execution
 @router.post("/{audit_id}/execute")
 def execute_audit(
@@ -1349,13 +1439,23 @@ def execute_audit(
 ):
     """
     ISO 19011 Clause 6.4 - Execute audit activities
+    Flexible: allows proceeding from INITIATED, PREPARATION, or EXECUTING status
     """
     audit = db.query(Audit).filter(Audit.id == audit_id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found")
     
-    if audit.status != AuditStatus.PREPARATION:
-        raise HTTPException(status_code=400, detail="Audit must be in preparation status to execute")
+    # Allow execution from multiple statuses (flexible approach)
+    allowed_statuses = [AuditStatus.INITIATED, AuditStatus.PREPARATION, AuditStatus.EXECUTING]
+    if audit.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Audit must be in initiated, preparation, or executing status. Current: {audit.status.value if hasattr(audit.status, 'value') else audit.status}"
+        )
+    
+    # Mark preparation as complete if moving from preparation
+    if audit.status == AuditStatus.PREPARATION:
+        audit.preparation_completed = True
     
     # Mark execution as started and move to execution phase
     audit.status = AuditStatus.EXECUTING
