@@ -343,6 +343,19 @@ export default function AuditExecutePage() {
     }
   };
 
+  const viewEvidence = async (evidenceId: string) => {
+    try {
+      const response = await api.get(`/audits/${auditId}/evidence/${evidenceId}/download`);
+      if (response.data?.url) {
+        window.open(response.data.url, '_blank');
+      } else {
+        setError('Unable to get download URL');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to view evidence');
+    }
+  };
+
   const addQuestionToInterview = () => {
     setNewInterview(prev => ({
       ...prev,
@@ -1233,16 +1246,18 @@ export default function AuditExecutePage() {
                         <h4 className="font-semibold">{evidence.file_name}</h4>
                         <p className="text-sm text-gray-600">{evidence.description}</p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
                         <Badge variant="outline">
-                          {evidence.evidence_type}
+                          {evidence.evidence_type || 'document'}
                         </Badge>
-                        {evidence.integrity_verified && (
-                          <Badge className="bg-green-100 text-green-800">
-                            <Hash className="h-3 w-3 mr-1" />
-                            Verified
-                          </Badge>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => viewEvidence(evidence.id)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
                       </div>
                     </div>
                     
@@ -1250,16 +1265,16 @@ export default function AuditExecutePage() {
                       <div>
                         <span className="text-gray-600">Source:</span>
                         <span className="ml-1 font-medium capitalize">
-                          {evidence.evidence_source?.replace('_', ' ')}
+                          {evidence.evidence_source?.replace('_', ' ') || 'N/A'}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-600">Relevance:</span>
-                        <span className="ml-1 font-medium">{evidence.relevance_score}/5</span>
+                        <span className="ml-1 font-medium">{evidence.relevance_score || '-'}/5</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Reliability:</span>
-                        <span className="ml-1 font-medium">{evidence.reliability_score}/5</span>
+                        <span className="ml-1 font-medium">{evidence.reliability_score || '-'}/5</span>
                       </div>
                       <div>
                         <span className="text-gray-600">Size:</span>
@@ -1268,19 +1283,12 @@ export default function AuditExecutePage() {
                         </span>
                       </div>
                     </div>
-                    
-                    {evidence.file_hash && (
-                      <div className="mt-3 p-2 bg-gray-50 rounded text-xs">
-                        <span className="text-gray-600">Hash:</span>
-                        <span className="ml-1 font-mono">{evidence.file_hash.substring(0, 32)}...</span>
-                      </div>
-                    )}
                   </div>
                 ))}
                 
                 {evidenceItems.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    No evidence items uploaded yet. Use the Evidence tab in the main audit view to upload files.
+                    No evidence items uploaded yet. Upload files using the form above.
                   </div>
                 )}
               </div>
