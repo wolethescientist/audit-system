@@ -178,8 +178,9 @@ class ReportGenerationService:
             raise ValueError(f"Audit with ID {audit_id} not found")
         
         # Check if audit is in appropriate status for reporting
+        # Compare case-insensitively since enum values may be uppercase in database
         valid_statuses = ["executing", "reporting", "followup", "closed"]
-        if audit.status.value not in valid_statuses:
+        if audit.status.value.lower() not in valid_statuses:
             raise ValueError(f"Audit status '{audit.status.value}' is not ready for reporting. Must be one of: {valid_statuses}")
         
         return audit
