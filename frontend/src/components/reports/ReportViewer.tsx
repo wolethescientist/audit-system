@@ -60,7 +60,7 @@ export default function ReportViewer({
     setError(null);
 
     try {
-      const response = await api.get(`/reports/${reportId}`);
+      const response = await api.get(`/api/v1/reports/${reportId}`);
       const data = response.data;
       setReportData(data);
 
@@ -83,7 +83,7 @@ export default function ReportViewer({
     setError(null);
 
     try {
-      const response = await api.get(`/reports/audit/${auditId}`);
+      const response = await api.get(`/api/v1/reports/audit/${auditId}`);
       const data = response.data;
       
       if (data.data.reports && data.data.reports.length > 0) {
@@ -122,7 +122,7 @@ export default function ReportViewer({
     if (!reportData) return;
 
     try {
-      const response = await api.get(`/reports/${reportData.id}/download/${format}`, {
+      const response = await api.get(`/api/v1/reports/${reportData.id}/download/${format}`, {
         responseType: 'blob'
       });
 

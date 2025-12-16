@@ -69,7 +69,7 @@ export default function ReportGenerator({
         message: 'Preparing audit data for AI analysis...'
       });
 
-      const response = await api.post(`/reports/generate/${auditId}`);
+      const response = await api.post(`/api/v1/reports/generate/${auditId}`);
 
       setGenerationProgress({
         step: 'Processing',
@@ -108,7 +108,7 @@ export default function ReportGenerator({
     if (!reportData) return;
 
     try {
-      const response = await api.get(`/reports/${reportData.report_id}/download/${format}`, {
+      const response = await api.get(`/api/v1/reports/${reportData.report_id}/download/${format}`, {
         responseType: 'blob'
       });
 
