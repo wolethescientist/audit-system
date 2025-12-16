@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Audit, AuditFinding } from '@/lib/types';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 // ISO 19011 Audit Workflow Stages
@@ -25,9 +26,13 @@ function getStageOrder(status: string): number {
 export default function AuditDetailPage() {
   const params = useParams();
   const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const auditId = params.id as string;
+  const [transitioning, setTransitioning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { data: audit } = useQuery<Audit>({
+  const { data: audit, refetch: refetchAudit } = useQuery<Audit>({
     queryKey: ['audit', auditId],
     queryFn: async () => {
       const response = await api.get(`/audits/${auditId}`);
@@ -42,6 +47,66 @@ export default function AuditDetailPage() {
       return response.data;
     },
   });
+
+  // Status transition handlers
+  const handleStartExecution = async () => {
+    setTransitioning(true);
+    setError(null);
+    try {
+      await api.post(`/audits/${auditId}/transition/start-execution`);
+      await refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+      router.push(`/audits/${auditId}/execute`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to start execution');
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handleStartReporting = async () => {
+    setTransitioning(true);
+    setError(null);
+    try {
+      await api.post(`/audits/${auditId}/transition/start-reporting`);
+      await refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+      router.push(`/audits/${auditId}/report`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to start reporting');
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handleStartFollowup = async () => {
+    setTransitioning(true);
+    setError(null);
+    try {
+      await api.post(`/audits/${auditId}/transition/start-followup`);
+      await refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+      router.push(`/audits/${auditId}/followup`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to start follow-up');
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handleCloseAudit = async () => {
+    setTransitioning(true);
+    setError(null);
+    try {
+      await api.post(`/audits/${auditId}/transition/close`);
+      await refetchAudit();
+      queryClient.invalidateQueries({ queryKey: ['audit', auditId] });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to close audit');
+    } finally {
+      setTransitioning(false);
+    }
+  };
 
   const currentStageOrder = getStageOrder(audit?.status || 'PLANNED');
 
@@ -71,6 +136,13 @@ export default function AuditDetailPage() {
         <h1 className="text-3xl font-bold">{audit?.title || 'Loading...'}</h1>
         <p className="text-gray-600 mt-2">{audit?.scope}</p>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
 
       {/* ISO 19011 Workflow Progress */}
       <div className="card mb-6">
@@ -157,12 +229,61 @@ export default function AuditDetailPage() {
               <p className="text-blue-800 mb-4">
                 Preparation complete. Begin executing the audit - collect evidence, conduct interviews, and document findings.
               </p>
-              <Link 
-                href={`/audits/${auditId}/execute`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              <button 
+                onClick={handleStartExecution}
+                disabled={transitioning}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                Start Execution →
-              </Link>
+                {transitioning ? 'Starting...' : 'Start Execution →'}
+              </button>
+            </div>
+          )}
+
+          {audit?.status === 'EXECUTING' && (
+            <div className="card bg-yellow-50 border-yellow-200">
+              <h2 className="text-lg font-semibold text-yellow-900 mb-2">📝 Next: Reporting</h2>
+              <p className="text-yellow-800 mb-4">
+                Execution in progress. Once evidence collection is complete, proceed to generate the audit report.
+              </p>
+              <button 
+                onClick={handleStartReporting}
+                disabled={transitioning}
+                className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50"
+              >
+                {transitioning ? 'Starting...' : 'Start Reporting →'}
+              </button>
+            </div>
+          )}
+
+          {audit?.status === 'REPORTING' && (
+            <div className="card bg-purple-50 border-purple-200">
+              <h2 className="text-lg font-semibold text-purple-900 mb-2">🔄 Next: Follow-up</h2>
+              <p className="text-purple-800 mb-4">
+                Report generated. Proceed to follow-up phase to track corrective actions and verify implementation.
+              </p>
+              <button 
+                onClick={handleStartFollowup}
+                disabled={transitioning}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              >
+                {transitioning ? 'Starting...' : 'Start Follow-up →'}
+              </button>
+            </div>
+          )}
+
+          {audit?.status === 'FOLLOWUP' && (
+            <div className="card bg-green-50 border-green-200">
+              <h2 className="text-lg font-semibold text-green-900 mb-2">✅ Close Audit</h2>
+              <p className="text-green-800 mb-4">
+                Follow-up activities complete. Close the audit to finalize all records.
+              </p>
+              <button 
+                onClick={handleCloseAudit}
+                disabled={transitioning}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {transitioning ? 'Closing...' : 'Close Audit →'}
+              </button>
             </div>
           )}
 

@@ -2024,3 +2024,160 @@ def create_risk_assessment(
             "risk_level": risk_level
         }
     }
+
+
+# ===== AUDIT STATUS TRANSITION ENDPOINTS =====
+
+@router.post("/{audit_id}/transition/start-execution")
+def start_execution_phase(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+):
+    """
+    Transition audit from PREPARATION to EXECUTING status
+    ISO 19011 Clause 6.4 - Begin audit execution activities
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Get current status as string for comparison
+    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+    
+    # Allow transition from PREPARATION or INITIATED
+    allowed_statuses = ['PREPARATION', 'INITIATED', 'preparation', 'initiated']
+    if status_str.upper() not in [s.upper() for s in allowed_statuses]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot start execution from status '{status_str}'. Must be in PREPARATION or INITIATED status."
+        )
+    
+    # Mark preparation as completed and transition to EXECUTING
+    audit.preparation_completed = True
+    audit.status = AuditStatus.EXECUTING
+    
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "success": True,
+        "message": "Audit transitioned to EXECUTING status",
+        "audit_id": str(audit.id),
+        "previous_status": status_str,
+        "new_status": "EXECUTING"
+    }
+
+
+@router.post("/{audit_id}/transition/start-reporting")
+def start_reporting_phase(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+):
+    """
+    Transition audit from EXECUTING to REPORTING status
+    ISO 19011 Clause 6.5 - Begin audit reporting activities
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+    
+    allowed_statuses = ['EXECUTING', 'executing']
+    if status_str.upper() not in [s.upper() for s in allowed_statuses]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot start reporting from status '{status_str}'. Must be in EXECUTING status."
+        )
+    
+    audit.execution_completed = True
+    audit.status = AuditStatus.REPORTING
+    
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "success": True,
+        "message": "Audit transitioned to REPORTING status",
+        "audit_id": str(audit.id),
+        "previous_status": status_str,
+        "new_status": "REPORTING"
+    }
+
+
+@router.post("/{audit_id}/transition/start-followup")
+def start_followup_phase(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
+):
+    """
+    Transition audit from REPORTING to FOLLOWUP status
+    ISO 19011 Clause 6.6 - Begin follow-up activities
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+    
+    allowed_statuses = ['REPORTING', 'reporting']
+    if status_str.upper() not in [s.upper() for s in allowed_statuses]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot start follow-up from status '{status_str}'. Must be in REPORTING status."
+        )
+    
+    audit.reporting_completed = True
+    audit.status = AuditStatus.FOLLOWUP
+    
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "success": True,
+        "message": "Audit transitioned to FOLLOWUP status",
+        "audit_id": str(audit.id),
+        "previous_status": status_str,
+        "new_status": "FOLLOWUP"
+    }
+
+
+@router.post("/{audit_id}/transition/close")
+def close_audit(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]))
+):
+    """
+    Transition audit to CLOSED status
+    ISO 19011 Clause 6.7 - Complete audit and close
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
+    
+    allowed_statuses = ['FOLLOWUP', 'REPORTING', 'followup', 'reporting']
+    if status_str.upper() not in [s.upper() for s in allowed_statuses]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot close audit from status '{status_str}'. Must be in FOLLOWUP or REPORTING status."
+        )
+    
+    audit.followup_completed = True
+    audit.status = AuditStatus.CLOSED
+    
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "success": True,
+        "message": "Audit closed successfully",
+        "audit_id": str(audit.id),
+        "previous_status": status_str,
+        "new_status": "CLOSED"
+    }

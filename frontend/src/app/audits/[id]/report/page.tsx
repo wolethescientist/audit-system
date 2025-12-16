@@ -44,9 +44,10 @@ export default function AuditReportPage() {
       const data = response.data;
       setAudit(data);
 
-      // Check if audit is ready for reporting
+      // Check if audit is ready for reporting (case-insensitive)
       const reportReadyStatuses = ['executing', 'reporting', 'followup', 'closed'];
-      if (!reportReadyStatuses.includes(data.status)) {
+      const currentStatus = data.status?.toLowerCase();
+      if (!reportReadyStatuses.includes(currentStatus)) {
         setError(`Audit status "${data.status}" is not ready for reporting. Must be one of: ${reportReadyStatuses.join(', ')}`);
       }
 
