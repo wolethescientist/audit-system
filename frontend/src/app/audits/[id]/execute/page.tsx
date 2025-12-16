@@ -343,16 +343,12 @@ export default function AuditExecutePage() {
     }
   };
 
-  const viewEvidence = async (evidenceId: string) => {
-    try {
-      const response = await api.get(`/audits/${auditId}/evidence/${evidenceId}/download`);
-      if (response.data?.url) {
-        window.open(response.data.url, '_blank');
-      } else {
-        setError('Unable to get download URL');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to view evidence');
+  const viewEvidence = (evidenceId: string) => {
+    const evidence = evidenceItems.find(e => e.id === evidenceId);
+    if (evidence?.file_url) {
+      window.open(evidence.file_url, '_blank');
+    } else {
+      setError('File URL not available');
     }
   };
 
