@@ -112,6 +112,18 @@ export default function AuditPreparePage() {
       setPreparationStatus(response.data);
     } catch (err) {
       console.error('Failed to fetch preparation status:', err);
+      // Set default values to prevent NaN display
+      setPreparationStatus({
+        overall_completion: 100,
+        checklist_completion: 100,
+        document_completion: 100,
+        risk_assessment_completion: 100,
+        checklist_items_count: 0,
+        document_requests_count: 0,
+        risk_assessments_count: 0,
+        can_proceed_to_execution: true,  // Allow proceeding if API fails
+        preparation_completed: false
+      });
     }
   };
 
@@ -324,37 +336,62 @@ export default function AuditPreparePage() {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span>Overall Completion</span>
-                  <span>{Math.round(preparationStatus.overall_completion)}%</span>
+                  <span>{isNaN(preparationStatus.overall_completion) ? '100' : Math.round(preparationStatus.overall_completion)}%</span>
                 </div>
-                <Progress value={preparationStatus.overall_completion} className="h-2" />
+                <Progress value={isNaN(preparationStatus.overall_completion) ? 100 : preparationStatus.overall_completion} className="h-2" />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {Math.round(preparationStatus.checklist_completion)}%
+                    {preparationStatus.checklist_items_count === 0 ? 'N/A' : 
+                      (isNaN(preparationStatus.checklist_completion) ? '100' : Math.round(preparationStatus.checklist_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Checklist Completion</div>
+                  {preparationStatus.checklist_items_count > 0 && (
+                    <div className="text-xs text-gray-500">
+                      {preparationStatus.completed_checklist_items || 0}/{preparationStatus.checklist_items_count} items
+                    </div>
+                  )}
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {Math.round(preparationStatus.document_completion)}%
+                    {preparationStatus.document_requests_count === 0 ? 'N/A' : 
+                      (isNaN(preparationStatus.document_completion) ? '100' : Math.round(preparationStatus.document_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Documents Received</div>
+                  {preparationStatus.document_requests_count > 0 && (
+                    <div className="text-xs text-gray-500">
+                      {preparationStatus.received_documents_count || 0}/{preparationStatus.document_requests_count} docs
+                    </div>
+                  )}
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">
-                    {Math.round(preparationStatus.risk_assessment_completion)}%
+                    {preparationStatus.risk_assessments_count === 0 ? 'N/A' : 
+                      (isNaN(preparationStatus.risk_assessment_completion) ? '100' : Math.round(preparationStatus.risk_assessment_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Risk Assessment</div>
+                  {preparationStatus.risk_assessments_count > 0 && (
+                    <div className="text-xs text-gray-500">
+                      {preparationStatus.risk_assessments_count} assessment(s)
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {preparationStatus.can_proceed_to_execution && (
+              {preparationStatus.can_proceed_to_execution ? (
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Preparation requirements met. Ready to proceed to execution phase.
+                    Ready to proceed to execution phase.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Complete at least one preparation activity or mark preparation as complete to proceed.
                   </AlertDescription>
                 </Alert>
               )}
@@ -806,8 +843,28 @@ export default function AuditPreparePage() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-4">
+        {!preparationStatus?.preparation_completed && (
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                setLoading(true);
+                await api.post(`/audits/${auditId}/prepare`, { preparation_completed: true });
+                setSuccess('Preparation marked as complete');
+                await fetchPreparationStatus();
+              } catch (err: any) {
+                setError(err.response?.data?.detail || 'Failed to mark preparation complete');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Mark Preparation Complete
+          </Button>
+        )}
         <Button
-          variant="outline"
           onClick={() => router.push(`/audits/${auditId}/execute`)}
           disabled={!preparationStatus?.can_proceed_to_execution}
         >
