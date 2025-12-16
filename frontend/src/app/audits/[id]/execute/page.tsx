@@ -400,7 +400,7 @@ export default function AuditExecutePage() {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {Math.round(executionStatus.evidence_integrity_percentage)}%
+                  {Math.round(executionStatus.evidence_integrity_percentage ?? 0)}%
                 </div>
                 <div className="text-sm text-gray-600">Evidence Integrity</div>
               </div>

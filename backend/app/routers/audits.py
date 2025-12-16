@@ -1870,7 +1870,8 @@ def get_execution_status(
     if sampling_plans:
         total_sampling_completion = sum(s.completion_percentage for s in sampling_plans) / len(sampling_plans)
     
-    evidence_with_integrity = sum(1 for e in evidence_items if e.integrity_verified)
+    # Use file_hash as proxy for integrity verification (integrity_verified field doesn't exist)
+    evidence_with_integrity = sum(1 for e in evidence_items if e.file_hash)
     evidence_integrity_percentage = (evidence_with_integrity / len(evidence_items) * 100) if evidence_items else 0
     
     return {
