@@ -327,21 +327,43 @@ class GeminiAIService:
         Returns:
             str: Generated report content in markdown format
         """
+        import asyncio
+        import re
+        
         # Prepare GEMINI prompt with ISO 19011 requirements
         prompt = self._create_iso_19011_prompt(audit_data)
         
-        try:
-            # Generate content using GEMINI AI
-            response = self.model.generate_content(prompt)
-            
-            if not response.text:
-                raise Exception("GEMINI AI returned empty response")
-            
-            return response.text
-            
-        except Exception as e:
-            logger.error(f"GEMINI AI generation failed: {str(e)}")
-            raise Exception(f"AI report generation failed: {str(e)}")
+        max_retries = 3
+        retry_delay = 25  # Start with 25 seconds for rate limit
+        
+        for attempt in range(max_retries):
+            try:
+                # Generate content using GEMINI AI
+                response = self.model.generate_content(prompt)
+                
+                if not response.text:
+                    raise Exception("GEMINI AI returned empty response")
+                
+                return response.text
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # Check if it's a rate limit error (429)
+                if "429" in error_str or "quota" in error_str.lower() or "rate" in error_str.lower():
+                    # Try to extract retry delay from error message
+                    retry_match = re.search(r'retry in (\d+\.?\d*)', error_str.lower())
+                    if retry_match:
+                        retry_delay = float(retry_match.group(1)) + 2  # Add buffer
+                    
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Rate limit hit, waiting {retry_delay}s before retry {attempt + 2}/{max_retries}")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 1.5  # Exponential backoff
+                        continue
+                
+                logger.error(f"GEMINI AI generation failed: {error_str}")
+                raise Exception(f"AI report generation failed: {error_str}")
 
     def _create_iso_19011_prompt(self, audit_data: Dict[str, Any]) -> str:
         """
