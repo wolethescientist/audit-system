@@ -567,11 +567,38 @@ def get_document(
         after_values={"document_name": document.document_name}
     )
     
-    # Create response with additional details
-    response_data = document.__dict__.copy()
-    response_data["tags"] = tag_names
-    
-    return DocumentDetailResponse(**response_data)
+    # Build response manually to avoid SQLAlchemy internal attributes
+    return DocumentDetailResponse(
+        id=document.id,
+        document_number=document.document_number,
+        document_name=document.document_name,
+        document_type=document.document_type,
+        category=document.category,
+        version=document.version,
+        file_url=document.file_url,
+        file_name=document.file_name,
+        file_size=document.file_size,
+        mime_type=document.mime_type,
+        approval_status=document.approval_status,
+        effective_date=document.effective_date,
+        expiry_date=document.expiry_date,
+        next_review_date=document.next_review_date,
+        uploaded_by_id=document.uploaded_by_id,
+        reviewed_by_id=document.reviewed_by_id,
+        approved_by_id=document.approved_by_id,
+        department_id=document.department_id,
+        confidentiality_level=document.confidentiality_level,
+        is_controlled=document.is_controlled,
+        is_active=document.is_active,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+        description=document.description,
+        keywords=document.keywords,
+        access_roles=document.access_roles if hasattr(document, 'access_roles') else None,
+        change_history=document.change_history if hasattr(document, 'change_history') else None,
+        supersedes_document_id=document.supersedes_document_id if hasattr(document, 'supersedes_document_id') else None,
+        tags=tag_names
+    )
 
 @router.get("/{doc_id}/download")
 def download_document(
