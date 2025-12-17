@@ -88,7 +88,7 @@ async def create_capa(
         db.commit()
         db.refresh(capa_item)
         
-        return CAPAResponse.from_orm(capa_item)
+        return CAPAResponse.model_validate(capa_item)
         
     except Exception as e:
         db.rollback()
@@ -110,54 +110,59 @@ async def get_capa_items(
     db: Session = Depends(get_db)
 ):
     """Get CAPA items with filtering and pagination"""
-    
-    query = db.query(CAPAItem)
-    
-    # Apply role-based filtering
-    if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
-        # Non-admin users can only see CAPAs assigned to them or their department
-        query = query.filter(
-            or_(
-                CAPAItem.assigned_to_id == current_user.id,
-                CAPAItem.responsible_department_id == current_user.department_id
+    try:
+        query = db.query(CAPAItem)
+        
+        # Apply role-based filtering
+        if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
+            # Non-admin users can only see CAPAs assigned to them or their department
+            query = query.filter(
+                or_(
+                    CAPAItem.assigned_to_id == current_user.id,
+                    CAPAItem.responsible_department_id == current_user.department_id
+                )
             )
-        )
-    
-    # Apply filters
-    if audit_id:
-        query = query.filter(CAPAItem.audit_id == audit_id)
-    
-    if status:
-        query = query.filter(CAPAItem.status == status)
-    
-    if assigned_to_id:
-        query = query.filter(CAPAItem.assigned_to_id == assigned_to_id)
-    
-    if priority:
-        query = query.filter(CAPAItem.priority == priority)
-    
-    if overdue_only:
-        today = datetime.now().date()
-        query = query.filter(
-            and_(
-                CAPAItem.due_date < today,
-                CAPAItem.status.in_([CAPAStatus.OPEN, CAPAStatus.IN_PROGRESS])
+        
+        # Apply filters
+        if audit_id:
+            query = query.filter(CAPAItem.audit_id == audit_id)
+        
+        if status:
+            query = query.filter(CAPAItem.status == status)
+        
+        if assigned_to_id:
+            query = query.filter(CAPAItem.assigned_to_id == assigned_to_id)
+        
+        if priority:
+            query = query.filter(CAPAItem.priority == priority)
+        
+        if overdue_only:
+            today = datetime.now().date()
+            query = query.filter(
+                and_(
+                    CAPAItem.due_date < today,
+                    CAPAItem.status.in_([CAPAStatus.OPEN, CAPAStatus.IN_PROGRESS])
+                )
             )
+        
+        # Order by priority and due date
+        query = query.order_by(
+            desc(func.case(
+                (CAPAItem.priority == "critical", 4),
+                (CAPAItem.priority == "high", 3),
+                (CAPAItem.priority == "medium", 2),
+                else_=1
+            )),
+            asc(CAPAItem.due_date)
         )
-    
-    # Order by priority and due date
-    query = query.order_by(
-        desc(func.case(
-            (CAPAItem.priority == "critical", 4),
-            (CAPAItem.priority == "high", 3),
-            (CAPAItem.priority == "medium", 2),
-            else_=1
-        )),
-        asc(CAPAItem.due_date)
-    )
-    
-    capa_items = query.offset(skip).limit(limit).all()
-    return [CAPAResponse.from_orm(item) for item in capa_items]
+        
+        capa_items = query.offset(skip).limit(limit).all()
+        return [CAPAResponse.model_validate(item) for item in capa_items]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch CAPA items: {str(e)}"
+        )
 
 @router.get("/{capa_id}", response_model=CAPADetailResponse)
 async def get_capa_detail(
@@ -183,7 +188,7 @@ async def get_capa_detail(
                 detail="Access denied to this CAPA item"
             )
     
-    return CAPADetailResponse.from_orm(capa_item)
+    return CAPADetailResponse.model_validate(capa_item)
 
 @router.put("/{capa_id}/root-cause", response_model=CAPAResponse)
 async def update_root_cause_analysis(
@@ -234,7 +239,7 @@ async def update_root_cause_analysis(
         db.commit()
         db.refresh(capa_item)
         
-        return CAPAResponse.from_orm(capa_item)
+        return CAPAResponse.model_validate(capa_item)
         
     except Exception as e:
         db.rollback()
@@ -347,7 +352,7 @@ async def verify_capa_effectiveness(
         db.commit()
         db.refresh(capa_item)
         
-        return CAPAResponse.from_orm(capa_item)
+        return CAPAResponse.model_validate(capa_item)
         
     except Exception as e:
         db.rollback()
@@ -392,7 +397,7 @@ async def update_capa(
         db.commit()
         db.refresh(capa_item)
         
-        return CAPAResponse.from_orm(capa_item)
+        return CAPAResponse.model_validate(capa_item)
         
     except Exception as e:
         db.rollback()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import List, Optional
@@ -289,6 +289,19 @@ def delete_evidence(
     return {"success": True, "message": "Evidence deleted successfully"}
 
 # Findings
+@router.get("/findings", response_model=List[FindingResponse])
+def list_all_findings(
+    audit_id: Optional[UUID] = Query(None, description="Filter by audit ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List findings with optional audit_id filter via query parameter"""
+    query = db.query(AuditFinding)
+    if audit_id:
+        query = query.filter(AuditFinding.audit_id == audit_id)
+    findings = query.all()
+    return findings
+
 @router.post("/{audit_id}/findings", response_model=FindingResponse)
 def create_finding(
     audit_id: UUID,
