@@ -91,7 +91,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
 
   const loadUsers = async () => {
     try {
-      const response = await api.get('/api/v1/users/');
+      const response = await api.get('/users/');
       setUsers(response.data);
     } catch (err) {
       console.error('Error loading users:', err);
@@ -101,7 +101,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
 
   const loadDepartments = async () => {
     try {
-      const response = await api.get('/api/v1/departments/');
+      const response = await api.get('/departments/');
       setDepartments(response.data);
     } catch (err) {
       console.error('Error loading departments:', err);

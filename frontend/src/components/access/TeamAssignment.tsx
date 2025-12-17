@@ -78,7 +78,7 @@ const TeamAssignment: React.FC<TeamAssignmentProps> = ({
   const loadAvailableUsers = async () => {
     try {
       // Get users with auditor roles
-      const response = await api.get('/api/v1/users/');
+      const response = await api.get('/users/');
       const users = response.data.filter((user: User) => 
         ['auditor', 'audit_manager'].includes(user.role) && user.id !== leadAuditor?.id
       );

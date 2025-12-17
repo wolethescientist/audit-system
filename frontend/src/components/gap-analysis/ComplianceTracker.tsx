@@ -47,7 +47,7 @@ const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
       setIsLoading(true);
       const [frameworksRes, departmentsRes] = await Promise.all([
         api.get('/api/v1/gap-analysis/frameworks'),
-        api.get('/api/v1/departments')
+        api.get('/departments')
       ]);
       
       setFrameworks(frameworksRes.data.map((f: any) => ({

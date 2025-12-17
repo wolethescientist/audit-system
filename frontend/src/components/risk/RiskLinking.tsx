@@ -75,7 +75,7 @@ const RiskLinking: React.FC<RiskLinkingProps> = ({
   const fetchFindings = async () => {
     try {
       const params = auditId ? { audit_id: auditId } : {};
-      const response = await api.get('/api/v1/audits/findings', { params });
+      const response = await api.get('/audits/findings', { params });
       setFindings(response.data);
     } catch (error) {
       console.error('Failed to fetch findings:', error);

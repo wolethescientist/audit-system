@@ -63,7 +63,7 @@ const GapRemediation: React.FC<GapRemediationProps> = ({
     try {
       setIsLoading(true);
       const [usersRes, capaRes] = await Promise.all([
-        api.get('/api/v1/users'),
+        api.get('/users'),
         api.get('/api/v1/capa')
       ]);
       

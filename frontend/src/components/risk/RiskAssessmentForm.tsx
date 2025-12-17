@@ -61,7 +61,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/api/v1/users');
+      const response = await api.get('/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -79,7 +79,7 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
 
   const fetchAudits = async () => {
     try {
-      const response = await api.get('/api/v1/audits');
+      const response = await api.get('/audits');
       setAudits(response.data);
     } catch (error) {
       console.error('Failed to fetch audits:', error);

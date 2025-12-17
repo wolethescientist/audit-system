@@ -47,9 +47,9 @@ export default function CAPAForm({
   const loadFormData = async () => {
     try {
       const [usersRes, departmentsRes, auditsRes] = await Promise.all([
-        api.get('/api/v1/users'),
-        api.get('/api/v1/departments'),
-        api.get('/api/v1/audits')
+        api.get('/users'),
+        api.get('/departments'),
+        api.get('/audits')
       ]);
 
       setUsers(usersRes.data);
@@ -58,7 +58,7 @@ export default function CAPAForm({
 
       // Load findings if audit is selected
       if (formData.audit_id) {
-        const findingsRes = await api.get(`/api/v1/audits/${formData.audit_id}/findings`);
+        const findingsRes = await api.get(`/audits/${formData.audit_id}/findings`);
         setFindings(findingsRes.data);
       }
 
@@ -78,7 +78,7 @@ export default function CAPAForm({
     if (auditId) {
       try {
         const [findingsRes, risksRes] = await Promise.all([
-          api.get(`/api/v1/audits/${auditId}/findings`),
+          api.get(`/audits/${auditId}/findings`),
           api.get(`/api/v1/risks?audit_id=${auditId}`)
         ]);
         setFindings(findingsRes.data);

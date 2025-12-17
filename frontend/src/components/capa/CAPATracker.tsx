@@ -85,7 +85,7 @@ export default function CAPATracker({
 
   const loadUsers = async () => {
     try {
-      const response = await api.get('/api/v1/users');
+      const response = await api.get('/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to load users:', error);

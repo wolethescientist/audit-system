@@ -245,18 +245,18 @@ export const vendorApi = {
 export const rbacApi = {
   // Team Assignment
   assignAuditTeam: async (assignmentData: any) => {
-    const response = await api.post('/api/v1/rbac/team-assignment', assignmentData);
+    const response = await api.post('/rbac/team-assignment', assignmentData);
     return response.data;
   },
 
   getAuditTeam: async (auditId: string) => {
-    const response = await api.get(`/api/v1/rbac/team-assignment/${auditId}`);
+    const response = await api.get(`/rbac/team-assignment/${auditId}`);
     return response.data;
   },
 
   // User Audit Access
   getUserAuditAccess: async (userId?: string) => {
-    const response = await api.get('/api/v1/rbac/user-audit-access', {
+    const response = await api.get('/rbac/user-audit-access', {
       params: userId ? { user_id: userId } : {}
     });
     return response.data;
@@ -264,13 +264,13 @@ export const rbacApi = {
 
   // Access Control Check
   checkAccess: async (accessCheck: any) => {
-    const response = await api.post('/api/v1/rbac/check-access', accessCheck);
+    const response = await api.post('/rbac/check-access', accessCheck);
     return response.data;
   },
 
   // Admin Override
   adminOverrideAuditAccess: async (auditId: string, targetUserId: string, overrideReason: string) => {
-    const response = await api.post('/api/v1/rbac/admin-override/audit-access', {
+    const response = await api.post('/rbac/admin-override/audit-access', {
       audit_id: auditId,
       target_user_id: targetUserId,
       override_reason: overrideReason
@@ -279,18 +279,18 @@ export const rbacApi = {
   },
 
   getSystemWideAccess: async () => {
-    const response = await api.get('/api/v1/rbac/admin-override/system-access');
+    const response = await api.get('/rbac/admin-override/system-access');
     return response.data;
   },
 
   // Role Matrix Management
   createRoleMatrix: async (roleData: any) => {
-    const response = await api.post('/api/v1/rbac/role-matrix', roleData);
+    const response = await api.post('/rbac/role-matrix', roleData);
     return response.data;
   },
 
   getRoleMatrix: async (departmentId?: string, isActive?: boolean) => {
-    const response = await api.get('/api/v1/rbac/role-matrix', {
+    const response = await api.get('/rbac/role-matrix', {
       params: { 
         department_id: departmentId,
         is_active: isActive
@@ -301,12 +301,12 @@ export const rbacApi = {
 
   // User Role Assignment
   assignUserRole: async (assignmentData: any) => {
-    const response = await api.post('/api/v1/rbac/user-role-assignment', assignmentData);
+    const response = await api.post('/rbac/user-role-assignment', assignmentData);
     return response.data;
   },
 
   getUserRoleAssignments: async (userId: string, includeInactive?: boolean) => {
-    const response = await api.get(`/api/v1/rbac/user-role-assignments/${userId}`, {
+    const response = await api.get(`/rbac/user-role-assignments/${userId}`, {
       params: { include_inactive: includeInactive }
     });
     return response.data;

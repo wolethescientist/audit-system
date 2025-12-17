@@ -48,8 +48,8 @@ export default function DocumentsPage() {
     try {
       // Load departments and users for dropdowns
       const [deptResponse, usersResponse] = await Promise.all([
-        api.get('/api/v1/departments'),
-        api.get('/api/v1/users')
+        api.get('/departments'),
+        api.get('/users')
       ]);
       
       setDepartments(deptResponse.data);

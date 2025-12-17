@@ -73,7 +73,7 @@ const ControlSuggestionComponent: React.FC<ControlSuggestionProps> = ({
   };
 
   const fetchUsers = async () => {
-    const response = await api.get('/api/v1/users');
+    const response = await api.get('/users');
     setUsers(response.data);
   };
 
