@@ -72,8 +72,12 @@ export default function DocumentApproval({
   const [approvalData, setApprovalData] = useState<DocumentApprovalType>({
     action: 'approve',
     comments: '',
-    effective_date: document.effective_date || new Date().toISOString().split('T')[0],
-    expiry_date: document.expiry_date || ''
+    effective_date: document.effective_date 
+      ? new Date(document.effective_date).toISOString().split('T')[0] 
+      : new Date().toISOString().split('T')[0],
+    expiry_date: document.expiry_date 
+      ? new Date(document.expiry_date).toISOString().split('T')[0] 
+      : ''
   });
 
   const handleApproval = async (action: 'approve' | 'reject' | 'request_changes') => {
@@ -82,10 +86,19 @@ export default function DocumentApproval({
     setSuccess(null);
 
     try {
-      const approvalPayload = {
-        ...approvalData,
-        action
+      // Build approval payload, converting dates to ISO format if present
+      const approvalPayload: Record<string, any> = {
+        action,
+        comments: approvalData.comments || null
       };
+      
+      // Only include dates if they have values
+      if (approvalData.effective_date) {
+        approvalPayload.effective_date = new Date(approvalData.effective_date).toISOString();
+      }
+      if (approvalData.expiry_date) {
+        approvalPayload.expiry_date = new Date(approvalData.expiry_date).toISOString();
+      }
 
       const result = await documentApi.approveDocument(document.id, approvalPayload);
       
