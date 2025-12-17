@@ -87,11 +87,11 @@ export default function VendorsPage() {
   );
 
   const getRiskBadgeColor = (risk: string) => {
-    switch (risk) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'critical': return 'bg-red-100 text-red-800';
+    switch (risk?.toUpperCase()) {
+      case 'LOW': return 'bg-green-100 text-green-800';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
+      case 'HIGH': return 'bg-orange-100 text-orange-800';
+      case 'CRITICAL': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -244,10 +244,10 @@ export default function VendorsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Risk Levels</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="LOW">Low</SelectItem>
+                <SelectItem value="MEDIUM">Medium</SelectItem>
+                <SelectItem value="HIGH">High</SelectItem>
+                <SelectItem value="CRITICAL">Critical</SelectItem>
               </SelectContent>
             </Select>
 

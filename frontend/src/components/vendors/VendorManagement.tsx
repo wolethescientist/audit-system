@@ -110,7 +110,7 @@ export default function VendorManagement({ vendor, onClose, onSuccess }: VendorM
     tax_identification_number: '',
     website: '',
     industry: '',
-    risk_rating: 'medium',
+    risk_rating: 'MEDIUM',
     status: 'active',
     contract_start_date: '',
     contract_end_date: '',
@@ -181,7 +181,7 @@ export default function VendorManagement({ vendor, onClose, onSuccess }: VendorM
         tax_identification_number: vendor.tax_identification_number || '',
         website: vendor.website || '',
         industry: vendor.industry || '',
-        risk_rating: vendor.risk_rating || 'medium',
+        risk_rating: vendor.risk_rating || 'MEDIUM',
         status: vendor.status || 'active',
         contract_start_date: vendor.contract_start_date ? vendor.contract_start_date.split('T')[0] : '',
         contract_end_date: vendor.contract_end_date ? vendor.contract_end_date.split('T')[0] : '',
@@ -636,10 +636,10 @@ export default function VendorManagement({ vendor, onClose, onSuccess }: VendorM
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="critical">Critical</SelectItem>
+                        <SelectItem value="LOW">Low</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="CRITICAL">Critical</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
