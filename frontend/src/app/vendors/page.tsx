@@ -203,23 +203,6 @@ export default function VendorsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
-            <Star className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {vendors.filter(v => v.performance_rating).length > 0
-                ? (vendors.reduce((sum, v) => sum + (v.performance_rating || 0), 0) / 
-                   vendors.filter(v => v.performance_rating).length).toFixed(1)
-                : 'N/A'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Performance rating
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Filters and Search */}
