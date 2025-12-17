@@ -61,7 +61,7 @@ export default function ReportsPage() {
   const fetchReports = async () => {
     try {
       const { api } = await import('@/lib/api');
-      const response = await api.get('/api/v1/reports/');
+      const response = await api.get('/api/v1/reports');
       setReports(response.data?.data || []);
     } catch (err) {
       console.error('Failed to fetch reports:', err);
@@ -72,7 +72,7 @@ export default function ReportsPage() {
   const fetchAudits = async () => {
     try {
       const { api } = await import('@/lib/api');
-      const response = await api.get('/api/v1/audits');
+      const response = await api.get('/audits');
       setAudits(response.data || []);
     } catch (err) {
       console.error('Failed to fetch audits:', err);
