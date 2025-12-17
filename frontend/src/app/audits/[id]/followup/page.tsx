@@ -69,11 +69,18 @@ export default function FollowUpPage() {
   
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newFollowup, setNewFollowup] = useState({
     finding_id: '',
     assigned_to_id: '',
     due_date: ''
   });
+  const [editFollowup, setEditFollowup] = useState<{
+    id: string;
+    status: string;
+    evidence_url: string;
+    completion_notes: string;
+  } | null>(null);
 
   const { data: audit } = useQuery<Audit>({
     queryKey: ['audit', auditId],
@@ -150,12 +157,45 @@ export default function FollowUpPage() {
     },
   });
 
+  // Update follow-up mutation
+  const updateFollowupMutation = useMutation({
+    mutationFn: async (data: { id: string; status?: string; evidence_url?: string; completion_notes?: string }) => {
+      const response = await api.put(`/followups/${data.id}`, {
+        status: data.status,
+        evidence_url: data.evidence_url,
+        completion_notes: data.completion_notes
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audit-followups-navigation', auditId] });
+      setShowEditModal(false);
+      setEditFollowup(null);
+    },
+  });
+
   const handleAddFollowup = () => {
     if (!newFollowup.assigned_to_id || !newFollowup.due_date) {
       alert('Please fill in required fields (Assigned To and Due Date)');
       return;
     }
     createFollowupMutation.mutate(newFollowup);
+  };
+
+  const handleEditFollowup = (followup: typeof followupData.followups[0]) => {
+    setEditFollowup({
+      id: followup.id,
+      status: followup.status,
+      evidence_url: followup.evidence_url || '',
+      completion_notes: followup.completion_notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateFollowup = () => {
+    if (editFollowup) {
+      updateFollowupMutation.mutate(editFollowup);
+    }
   };
 
   const tabs = [
@@ -340,6 +380,74 @@ export default function FollowUpPage() {
         </Alert>
       )}
 
+      {/* Edit Follow-up Modal */}
+      {showEditModal && editFollowup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Update Follow-up</h2>
+              <button onClick={() => { setShowEditModal(false); setEditFollowup(null); }} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={editFollowup.status}
+                  onChange={(e) => setEditFollowup({ ...editFollowup, status: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Evidence URL
+                </label>
+                <Input
+                  type="url"
+                  placeholder="https://..."
+                  value={editFollowup.evidence_url}
+                  onChange={(e) => setEditFollowup({ ...editFollowup, evidence_url: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Completion Notes
+                </label>
+                <textarea
+                  value={editFollowup.completion_notes}
+                  onChange={(e) => setEditFollowup({ ...editFollowup, completion_notes: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 min-h-[100px]"
+                  placeholder="Add notes about the follow-up progress or completion..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => { setShowEditModal(false); setEditFollowup(null); }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateFollowup}
+                disabled={updateFollowupMutation.isPending}
+              >
+                {updateFollowupMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Follow-up Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -504,6 +612,7 @@ export default function FollowUpPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => handleEditFollowup(followup)}
                       >
                         Edit
                       </Button>
