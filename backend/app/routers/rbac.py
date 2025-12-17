@@ -485,7 +485,7 @@ def get_system_wide_access(
 
 # Role Matrix Management
 
-@router.post("/role-matrix", response_model=RoleMatrixResponse)
+@router.post("/role-matrix")
 def create_role_matrix(
     role_data: RoleMatrixCreate,
     db: Session = Depends(get_db),
@@ -519,7 +519,44 @@ def create_role_matrix(
     db.commit()
     db.refresh(role_matrix)
     
-    return role_matrix
+    # Build permissions dictionary for response
+    permissions = {
+        "can_create_audits": role_matrix.can_create_audits or False,
+        "can_view_all_audits": role_matrix.can_view_all_audits or False,
+        "can_view_assigned_audits": role_matrix.can_view_assigned_audits or False,
+        "can_edit_audits": role_matrix.can_edit_audits or False,
+        "can_delete_audits": role_matrix.can_delete_audits or False,
+        "can_approve_reports": role_matrix.can_approve_reports or False,
+        "can_manage_users": role_matrix.can_manage_users or False,
+        "can_manage_departments": role_matrix.can_manage_departments or False,
+        "can_view_analytics": role_matrix.can_view_analytics or False,
+        "can_export_data": role_matrix.can_export_data or False,
+        "can_create_risks": role_matrix.can_create_risks or False,
+        "can_assess_risks": role_matrix.can_assess_risks or False,
+        "can_approve_risk_treatments": role_matrix.can_approve_risk_treatments or False,
+        "can_create_capa": role_matrix.can_create_capa or False,
+        "can_assign_capa": role_matrix.can_assign_capa or False,
+        "can_close_capa": role_matrix.can_close_capa or False,
+        "can_upload_documents": role_matrix.can_upload_documents or False,
+        "can_approve_documents": role_matrix.can_approve_documents or False,
+        "can_archive_documents": role_matrix.can_archive_documents or False,
+        "can_manage_assets": role_matrix.can_manage_assets or False,
+        "can_assign_assets": role_matrix.can_assign_assets or False,
+        "can_manage_vendors": role_matrix.can_manage_vendors or False,
+        "can_evaluate_vendors": role_matrix.can_evaluate_vendors or False,
+    }
+    
+    return {
+        "id": role_matrix.id,
+        "role_name": role_matrix.role_name,
+        "role_description": role_matrix.role_description,
+        "role_category": role_matrix.role_category or "business",
+        "department_id": role_matrix.department_id,
+        "is_global_role": role_matrix.is_global_role or False,
+        "permissions": permissions,
+        "is_active": role_matrix.is_active or False,
+        "created_at": role_matrix.created_at
+    }
 
 @router.get("/role-matrix")
 def list_role_matrix(
