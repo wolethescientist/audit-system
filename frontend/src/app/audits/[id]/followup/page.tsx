@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Audit, User as UserType } from '@/lib/types';
@@ -21,7 +21,9 @@ import {
   ExternalLink,
   ArrowLeft,
   Plus,
-  X
+  X,
+  Upload,
+  FileText
 } from 'lucide-react';
 
 interface FollowupWithNavigation {
@@ -81,6 +83,9 @@ export default function FollowUpPage() {
     evidence_url: string;
     completion_notes: string;
   } | null>(null);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: audit } = useQuery<Audit>({
     queryKey: ['audit', auditId],
@@ -189,7 +194,44 @@ export default function FollowUpPage() {
       evidence_url: followup.evidence_url || '',
       completion_notes: followup.completion_notes || ''
     });
+    setSelectedFile(null);
     setShowEditModal(true);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadEvidence = async () => {
+    if (!selectedFile || !editFollowup) return;
+    
+    setUploadingEvidence(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('description', `Follow-up evidence for ${editFollowup.id}`);
+      formData.append('evidence_type', 'document');
+
+      const response = await api.post(
+        `/audits/${auditId}/evidence/upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      
+      // Update the evidence URL with the uploaded file URL
+      setEditFollowup({
+        ...editFollowup,
+        evidence_url: response.data.file_url
+      });
+      setSelectedFile(null);
+    } catch (error) {
+      alert('Failed to upload evidence. Please try again.');
+    } finally {
+      setUploadingEvidence(false);
+    }
   };
 
   const handleUpdateFollowup = () => {
@@ -410,14 +452,69 @@ export default function FollowUpPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Evidence URL
+                  Evidence
                 </label>
-                <Input
-                  type="url"
-                  placeholder="https://..."
-                  value={editFollowup.evidence_url}
-                  onChange={(e) => setEditFollowup({ ...editFollowup, evidence_url: e.target.value })}
-                />
+                {editFollowup.evidence_url ? (
+                  <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <FileText className="w-4 h-4 text-green-600" />
+                    <a 
+                      href={editFollowup.evidence_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-green-700 hover:underline flex-1 truncate"
+                    >
+                      Evidence uploaded
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setEditFollowup({ ...editFollowup, evidence_url: '' })}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt,.csv"
+                    />
+                    {selectedFile ? (
+                      <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-blue-700 flex-1 truncate">{selectedFile.name}</span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleUploadEvidence}
+                          disabled={uploadingEvidence}
+                        >
+                          {uploadingEvidence ? 'Uploading...' : 'Upload'}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFile(null)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Select Evidence File
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div>
