@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { User } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,7 +26,7 @@ export default function UsersPage() {
   const [formData, setFormData] = useState<UserFormData>({
     email: '',
     full_name: '',
-    role: 'AUDITOR',
+    role: 'auditor',
     department_id: '',
   });
 
@@ -101,7 +101,7 @@ export default function UsersPage() {
       setFormData({
         email: '',
         full_name: '',
-        role: 'AUDITOR',
+        role: 'auditor',
         department_id: '',
       });
     }
@@ -115,7 +115,7 @@ export default function UsersPage() {
     setFormData({
       email: '',
       full_name: '',
-      role: 'AUDITOR',
+      role: 'auditor',
       department_id: '',
     });
   };
@@ -139,13 +139,12 @@ export default function UsersPage() {
   };
 
   const roleOptions = [
-    { value: 'SYSTEM_ADMIN', label: 'System Admin' },
-    { value: 'AUDIT_MANAGER', label: 'Audit Manager' },
-    { value: 'LEAD_AUDITOR', label: 'Lead Auditor' },
-    { value: 'AUDITOR', label: 'Auditor' },
-    { value: 'DEPARTMENT_HEAD', label: 'Department Head' },
-    { value: 'AUDITEE', label: 'Auditee' },
-    { value: 'OBSERVER', label: 'Observer' },
+    { value: 'system_admin', label: 'System Admin' },
+    { value: 'audit_manager', label: 'Audit Manager' },
+    { value: 'auditor', label: 'Auditor' },
+    { value: 'department_head', label: 'Department Head' },
+    { value: 'department_officer', label: 'Department Officer' },
+    { value: 'viewer', label: 'Viewer' },
   ];
 
   return (
