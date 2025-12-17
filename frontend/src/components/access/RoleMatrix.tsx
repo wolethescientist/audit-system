@@ -100,40 +100,44 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
       const rolesData = await rbacApi.getRoleMatrix(undefined, true);
       
       // Transform API response to match component interface
-      const transformedRoles = rolesData.map((role: any) => ({
-        id: role.id,
-        role_name: role.role_name,
-        role_description: role.role_description,
-        role_category: role.role_category || 'business',
-        department_id: role.department_id,
-        is_global_role: role.is_global_role,
-        can_create_audits: role.can_create_audits || false,
-        can_view_all_audits: role.can_view_all_audits || false,
-        can_view_assigned_audits: role.can_view_assigned_audits || true,
-        can_edit_audits: role.can_edit_audits || false,
-        can_delete_audits: role.can_delete_audits || false,
-        can_approve_reports: role.can_approve_reports || false,
-        can_manage_users: role.can_manage_users || false,
-        can_manage_departments: role.can_manage_departments || false,
-        can_view_analytics: role.can_view_analytics || false,
-        can_export_data: role.can_export_data || false,
-        can_create_risks: role.can_create_risks || false,
-        can_assess_risks: role.can_assess_risks || false,
-        can_approve_risk_treatments: role.can_approve_risk_treatments || false,
-        can_create_capa: role.can_create_capa || false,
-        can_assign_capa: role.can_assign_capa || false,
-        can_close_capa: role.can_close_capa || false,
-        can_upload_documents: role.can_upload_documents || false,
-        can_approve_documents: role.can_approve_documents || false,
-        can_archive_documents: role.can_archive_documents || false,
-        can_manage_assets: role.can_manage_assets || false,
-        can_assign_assets: role.can_assign_assets || false,
-        can_manage_vendors: role.can_manage_vendors || false,
-        can_evaluate_vendors: role.can_evaluate_vendors || false,
-        is_active: role.is_active,
-        created_at: role.created_at,
-        updated_at: role.updated_at || role.created_at
-      }));
+      // Backend returns permissions as nested object: role.permissions.can_create_audits
+      const transformedRoles = rolesData.map((role: any) => {
+        const permissions = role.permissions || {};
+        return {
+          id: role.id,
+          role_name: role.role_name,
+          role_description: role.role_description,
+          role_category: role.role_category || 'business',
+          department_id: role.department_id,
+          is_global_role: role.is_global_role,
+          can_create_audits: permissions.can_create_audits || false,
+          can_view_all_audits: permissions.can_view_all_audits || false,
+          can_view_assigned_audits: permissions.can_view_assigned_audits ?? true,
+          can_edit_audits: permissions.can_edit_audits || false,
+          can_delete_audits: permissions.can_delete_audits || false,
+          can_approve_reports: permissions.can_approve_reports || false,
+          can_manage_users: permissions.can_manage_users || false,
+          can_manage_departments: permissions.can_manage_departments || false,
+          can_view_analytics: permissions.can_view_analytics || false,
+          can_export_data: permissions.can_export_data || false,
+          can_create_risks: permissions.can_create_risks || false,
+          can_assess_risks: permissions.can_assess_risks || false,
+          can_approve_risk_treatments: permissions.can_approve_risk_treatments || false,
+          can_create_capa: permissions.can_create_capa || false,
+          can_assign_capa: permissions.can_assign_capa || false,
+          can_close_capa: permissions.can_close_capa || false,
+          can_upload_documents: permissions.can_upload_documents || false,
+          can_approve_documents: permissions.can_approve_documents || false,
+          can_archive_documents: permissions.can_archive_documents || false,
+          can_manage_assets: permissions.can_manage_assets || false,
+          can_assign_assets: permissions.can_assign_assets || false,
+          can_manage_vendors: permissions.can_manage_vendors || false,
+          can_evaluate_vendors: permissions.can_evaluate_vendors || false,
+          is_active: role.is_active,
+          created_at: role.created_at,
+          updated_at: role.updated_at || role.created_at
+        };
+      });
       
       setRoles(transformedRoles);
     } catch (err: any) {
