@@ -65,16 +65,9 @@ export default function ReportsPage() {
 
   const fetchAudits = async () => {
     try {
-      const response = await fetch('/api/v1/audits', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAudits(data.data || []);
-      }
+      const { api } = await import('@/lib/api');
+      const response = await api.get('/api/v1/audits');
+      setAudits(response.data || []);
     } catch (err) {
       console.error('Failed to fetch audits:', err);
     } finally {
