@@ -521,7 +521,7 @@ def create_role_matrix(
     
     return role_matrix
 
-@router.get("/role-matrix", response_model=List[RoleMatrixResponse])
+@router.get("/role-matrix")
 def list_role_matrix(
     department_id: Optional[UUID] = None,
     is_active: Optional[bool] = True,
@@ -545,7 +545,50 @@ def list_role_matrix(
     if is_active is not None:
         query = query.filter(RoleMatrix.is_active == is_active)
     
-    return query.all()
+    roles = query.all()
+    
+    # Convert to response format with permissions dictionary
+    result = []
+    for role in roles:
+        permissions = {
+            "can_create_audits": role.can_create_audits or False,
+            "can_view_all_audits": role.can_view_all_audits or False,
+            "can_view_assigned_audits": role.can_view_assigned_audits or False,
+            "can_edit_audits": role.can_edit_audits or False,
+            "can_delete_audits": role.can_delete_audits or False,
+            "can_approve_reports": role.can_approve_reports or False,
+            "can_manage_users": role.can_manage_users or False,
+            "can_manage_departments": role.can_manage_departments or False,
+            "can_view_analytics": role.can_view_analytics or False,
+            "can_export_data": role.can_export_data or False,
+            "can_create_risks": role.can_create_risks or False,
+            "can_assess_risks": role.can_assess_risks or False,
+            "can_approve_risk_treatments": role.can_approve_risk_treatments or False,
+            "can_create_capa": role.can_create_capa or False,
+            "can_assign_capa": role.can_assign_capa or False,
+            "can_close_capa": role.can_close_capa or False,
+            "can_upload_documents": role.can_upload_documents or False,
+            "can_approve_documents": role.can_approve_documents or False,
+            "can_archive_documents": role.can_archive_documents or False,
+            "can_manage_assets": role.can_manage_assets or False,
+            "can_assign_assets": role.can_assign_assets or False,
+            "can_manage_vendors": role.can_manage_vendors or False,
+            "can_evaluate_vendors": role.can_evaluate_vendors or False,
+        }
+        
+        result.append({
+            "id": role.id,
+            "role_name": role.role_name,
+            "role_description": role.role_description,
+            "role_category": role.role_category or "business",
+            "department_id": role.department_id,
+            "is_global_role": role.is_global_role or False,
+            "permissions": permissions,
+            "is_active": role.is_active or False,
+            "created_at": role.created_at
+        })
+    
+    return result
 
 @router.post("/user-role-assignment", response_model=UserRoleAssignmentResponse)
 def assign_user_role(
