@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Audit } from '@/lib/types';
+import { Audit, User as UserType } from '@/lib/types';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { 
   Calendar, 
   Clock, 
@@ -18,7 +19,9 @@ import {
   CheckCircle, 
   XCircle,
   ExternalLink,
-  ArrowLeft
+  ArrowLeft,
+  Plus,
+  X
 } from 'lucide-react';
 
 interface FollowupWithNavigation {
@@ -53,15 +56,47 @@ interface FollowupWithNavigation {
   };
 }
 
+interface Finding {
+  id: string;
+  title: string;
+  severity: string;
+}
+
 export default function FollowUpPage() {
   const params = useParams();
   const auditId = params.id as string;
   const queryClient = useQueryClient();
+  
+  // Modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newFollowup, setNewFollowup] = useState({
+    finding_id: '',
+    assigned_to_id: '',
+    due_date: ''
+  });
 
   const { data: audit } = useQuery<Audit>({
     queryKey: ['audit', auditId],
     queryFn: async () => {
       const response = await api.get(`/audits/${auditId}`);
+      return response.data;
+    },
+  });
+
+  // Fetch users for assignment dropdown
+  const { data: users } = useQuery<UserType[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/users/');
+      return response.data;
+    },
+  });
+
+  // Fetch findings for this audit
+  const { data: findings } = useQuery<Finding[]>({
+    queryKey: ['audit-findings', auditId],
+    queryFn: async () => {
+      const response = await api.get(`/audits/${auditId}/findings`);
       return response.data;
     },
   });
@@ -72,6 +107,23 @@ export default function FollowUpPage() {
     queryFn: async () => {
       const response = await api.get(`/followups/audit/${auditId}/followups-with-navigation`);
       return response.data;
+    },
+  });
+
+  // Create follow-up mutation
+  const createFollowupMutation = useMutation({
+    mutationFn: async (data: { finding_id: string; assigned_to_id: string; due_date: string }) => {
+      const response = await api.post(`/followups/audit/${auditId}`, {
+        finding_id: data.finding_id || null,
+        assigned_to_id: data.assigned_to_id,
+        due_date: data.due_date
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audit-followups-navigation', auditId] });
+      setShowAddModal(false);
+      setNewFollowup({ finding_id: '', assigned_to_id: '', due_date: '' });
     },
   });
 
@@ -94,8 +146,17 @@ export default function FollowUpPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-followups-navigation', auditId] });
+      alert(`Successfully auto-closed all completed follow-ups`);
     },
   });
+
+  const handleAddFollowup = () => {
+    if (!newFollowup.assigned_to_id || !newFollowup.due_date) {
+      alert('Please fill in required fields (Assigned To and Due Date)');
+      return;
+    }
+    createFollowupMutation.mutate(newFollowup);
+  };
 
   const tabs = [
     { name: 'Overview', href: `/audits/${auditId}` },
@@ -279,6 +340,83 @@ export default function FollowUpPage() {
         </Alert>
       )}
 
+      {/* Add Follow-up Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Add Follow-up Action</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Related Finding (Optional)
+                </label>
+                <select
+                  value={newFollowup.finding_id}
+                  onChange={(e) => setNewFollowup({ ...newFollowup, finding_id: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                >
+                  <option value="">Select a finding...</option>
+                  {findings?.map((finding) => (
+                    <option key={finding.id} value={finding.id}>
+                      {finding.title} ({finding.severity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assigned To <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newFollowup.assigned_to_id}
+                  onChange={(e) => setNewFollowup({ ...newFollowup, assigned_to_id: e.target.value })}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  required
+                >
+                  <option value="">Select a user...</option>
+                  {users?.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.full_name} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Due Date <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={newFollowup.due_date}
+                  onChange={(e) => setNewFollowup({ ...newFollowup, due_date: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddFollowup}
+                disabled={createFollowupMutation.isPending}
+              >
+                {createFollowupMutation.isPending ? 'Creating...' : 'Create Follow-up'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -286,13 +424,16 @@ export default function FollowUpPage() {
             <div className="flex gap-2">
               <Button 
                 onClick={() => bulkAutoCloseMutation.mutate()}
-                disabled={bulkAutoCloseMutation.isPending}
+                disabled={bulkAutoCloseMutation.isPending || (followupData?.summary.completed === 0)}
                 variant="outline"
                 size="sm"
               >
-                Bulk Auto-Close Completed
+                {bulkAutoCloseMutation.isPending ? 'Processing...' : 'Bulk Auto-Close Completed'}
               </Button>
-              <Button size="sm">Add Follow-up</Button>
+              <Button size="sm" onClick={() => setShowAddModal(true)}>
+                <Plus className="w-4 h-4 mr-1" />
+                Add Follow-up
+              </Button>
             </div>
           </div>
         </CardHeader>

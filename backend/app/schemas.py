@@ -321,7 +321,7 @@ class ReportValidationResult(BaseModel):
 
 # Followup Schemas
 class FollowupCreate(BaseModel):
-    finding_id: UUID
+    finding_id: Optional[UUID] = None
     assigned_to_id: UUID
     due_date: datetime
 

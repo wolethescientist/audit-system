@@ -11,9 +11,88 @@ from app.models import (
     AuditFollowup, Audit, User, UserRole, AuditFinding, 
     AuditStatus, Department
 )
-from app.schemas import FollowupResponse, FollowupUpdate
+from app.schemas import FollowupResponse, FollowupUpdate, FollowupCreate
 
 router = APIRouter(prefix="/followups", tags=["Follow-ups"])
+
+
+@router.post("/audit/{audit_id}", response_model=FollowupResponse)
+def create_followup(
+    audit_id: UUID,
+    followup_data: FollowupCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create a new follow-up action for an audit
+    Requirements: 2.5, 14.1
+    """
+    # Verify audit exists
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Verify finding exists if provided
+    if followup_data.finding_id:
+        finding = db.query(AuditFinding).filter(
+            AuditFinding.id == followup_data.finding_id,
+            AuditFinding.audit_id == audit_id
+        ).first()
+        if not finding:
+            raise HTTPException(status_code=404, detail="Finding not found for this audit")
+    
+    # Verify assigned user exists
+    assigned_user = db.query(User).filter(User.id == followup_data.assigned_to_id).first()
+    if not assigned_user:
+        raise HTTPException(status_code=404, detail="Assigned user not found")
+    
+    # Create the follow-up
+    new_followup = AuditFollowup(
+        audit_id=audit_id,
+        finding_id=followup_data.finding_id,
+        assigned_to_id=followup_data.assigned_to_id,
+        due_date=followup_data.due_date,
+        status="pending"
+    )
+    
+    db.add(new_followup)
+    db.commit()
+    db.refresh(new_followup)
+    
+    return new_followup
+
+
+@router.put("/{followup_id}", response_model=FollowupResponse)
+def update_followup(
+    followup_id: UUID,
+    followup_data: FollowupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update a follow-up action
+    Requirements: 2.5, 14.2
+    """
+    followup = db.query(AuditFollowup).filter(AuditFollowup.id == followup_id).first()
+    if not followup:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    
+    # Check permission
+    if followup.assigned_to_id != current_user.id and current_user.role not in [UserRole.AUDIT_MANAGER, UserRole.SYSTEM_ADMIN]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this follow-up")
+    
+    # Update fields
+    if followup_data.status is not None:
+        followup.status = followup_data.status
+    if followup_data.evidence_url is not None:
+        followup.evidence_url = followup_data.evidence_url
+    if followup_data.completion_notes is not None:
+        followup.completion_notes = followup_data.completion_notes
+    
+    db.commit()
+    db.refresh(followup)
+    
+    return followup
 
 @router.get("/my-followups", response_model=List[FollowupResponse])
 def get_my_followups(

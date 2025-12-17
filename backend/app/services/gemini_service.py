@@ -8,6 +8,8 @@ that strictly follow ISO 19011:2018 Clause 6.5 requirements.
 import os
 import json
 import logging
+import time
+import threading
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import google.generativeai as genai
@@ -16,6 +18,11 @@ from app.models import Audit, AuditFinding, AuditEvidence, AuditChecklist, User,
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
+
+# Global rate limiter - allows 1 request every 15 seconds (4 per minute max)
+_last_request_time = 0
+_rate_limit_lock = threading.Lock()
+_MIN_REQUEST_INTERVAL = 15  # seconds between requests
 
 class GeminiAIService:
     """
@@ -33,7 +40,8 @@ class GeminiAIService:
     def __init__(self):
         """Initialize GEMINI AI service with authentication and configuration."""
         self.api_key = os.getenv("GEMINI_API_KEY")
-        self.model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
+        # Use gemini-1.5-flash by default - it has higher rate limits (15 RPM vs 2 RPM for pro)
+        self.model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY environment variable is required")
@@ -41,6 +49,8 @@ class GeminiAIService:
         # Configure GEMINI AI
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(self.model_name)
+        
+        logger.info(f"Initialized Gemini AI with model: {self.model_name}")
         
         # ISO 19011 compliant report template
         self.iso_19011_template = self._load_iso_19011_template()
@@ -361,6 +371,10 @@ class GeminiAIService:
                         await asyncio.sleep(retry_delay)
                         retry_delay *= 1.5  # Exponential backoff
                         continue
+                    
+                    # Final attempt failed - give user-friendly message
+                    logger.error(f"GEMINI AI rate limit exceeded after {max_retries} attempts")
+                    raise Exception("AI service is temporarily busy. Please wait 1 minute and try again.")
                 
                 logger.error(f"GEMINI AI generation failed: {error_str}")
                 raise Exception(f"AI report generation failed: {error_str}")
