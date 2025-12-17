@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertCircle, Users, FileText, Target, Settings } from 'lucide-react';
 import { api } from '@/lib/api';
+import AuditNavigation from '@/components/audit/AuditNavigation';
 
 interface AuditInitiationData {
   audit_objectives: string;
@@ -164,18 +165,13 @@ export default function AuditInitiatePage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <AuditNavigation auditId={auditId} audit={audit} />
+      
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Audit Initiation</h1>
-          <p className="text-gray-600 mt-2">ISO 19011 Clause 6.2 - Initiating the audit</p>
-          <p className="text-sm text-gray-500">Audit: {audit.title} ({audit.year})</p>
+          <h2 className="text-xl font-semibold">Audit Initiation</h2>
+          <p className="text-gray-600 mt-1">ISO 19011 Clause 6.2 - Initiating the audit</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/audits/${auditId}`)}
-        >
-          Back to Audit
-        </Button>
       </div>
 
       {error && (

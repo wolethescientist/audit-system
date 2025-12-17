@@ -1,38 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { api } from '@/lib/api';
-// Simple icon components as fallbacks
-const ArrowLeft = ({ className }: { className?: string }) => <span className={className}>←</span>;
-const FileText = ({ className }: { className?: string }) => <span className={className}>📄</span>;
-const Loader2 = ({ className }: { className?: string }) => <span className={`${className} animate-spin`}>⏳</span>;
-const AlertCircle = ({ className }: { className?: string }) => <span className={className}>⚠️</span>;
+import AuditNavigation from '@/components/audit/AuditNavigation';
 import ReportGenerator from '@/components/reports/ReportGenerator';
 import ReportViewer from '@/components/reports/ReportViewer';
+import { Audit } from '@/lib/types';
 
-interface Audit {
-  id: string;
-  title: string;
-  year: number;
-  status: string;
-  scope: string;
-  department_name: string;
-}
+// Simple icon components as fallbacks
+const Loader2 = ({ className }: { className?: string }) => <span className={`${className} animate-spin`}>⏳</span>;
+const AlertCircle = ({ className }: { className?: string }) => <span className={className}>⚠️</span>;
 
 export default function AuditReportPage() {
   const params = useParams();
-  const router = useRouter();
   const auditId = params.id as string;
 
   const [audit, setAudit] = useState<Audit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showGenerator, setShowGenerator] = useState(false);
-  const [reportGenerated, setReportGenerated] = useState(false);
 
   useEffect(() => {
     fetchAudit();
@@ -58,8 +47,7 @@ export default function AuditReportPage() {
     }
   };
 
-  const handleReportGenerated = (reportData: any) => {
-    setReportGenerated(true);
+  const handleReportGenerated = () => {
     setShowGenerator(false);
   };
 
@@ -80,17 +68,8 @@ export default function AuditReportPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <Button 
-            variant="outline" 
-            onClick={() => router.back()}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </div>
+      <div className="p-8">
+        <AuditNavigation auditId={auditId} audit={audit} />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -101,7 +80,8 @@ export default function AuditReportPage() {
 
   if (!audit) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="p-8">
+        <AuditNavigation auditId={auditId} />
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>Audit not found.</AlertDescription>
@@ -111,26 +91,8 @@ export default function AuditReportPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Audit
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <FileText className="h-8 w-8" />
-            Audit Report
-          </h1>
-          <p className="text-muted-foreground">
-            {audit.title} ({audit.year})
-          </p>
-        </div>
-      </div>
+    <div className="p-8 space-y-6">
+      <AuditNavigation auditId={auditId} audit={audit} />
 
       {/* Audit Information */}
       <Card>

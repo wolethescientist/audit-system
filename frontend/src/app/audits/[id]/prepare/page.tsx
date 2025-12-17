@@ -14,10 +14,11 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  CheckCircle, AlertCircle, FileText, Users, Calendar, 
-  Plus, Trash2, Clock, AlertTriangle, CheckSquare 
+  CheckCircle, AlertCircle, FileText, Calendar, 
+  Plus, AlertTriangle, CheckSquare 
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import AuditNavigation from '@/components/audit/AuditNavigation';
 
 interface ChecklistItem {
   id: number;
@@ -294,18 +295,13 @@ export default function AuditPreparePage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <AuditNavigation auditId={auditId} audit={audit} />
+      
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Audit Preparation</h1>
-          <p className="text-gray-600 mt-2">ISO 19011 Clause 6.3 - Preparing for audit activities</p>
-          <p className="text-sm text-gray-500">Audit: {audit.title} ({audit.year})</p>
+          <h2 className="text-xl font-semibold">Audit Preparation</h2>
+          <p className="text-gray-600 mt-1">ISO 19011 Clause 6.3 - Preparing for audit activities</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/audits/${auditId}`)}
-        >
-          Back to Audit
-        </Button>
       </div>
 
       {error && (

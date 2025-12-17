@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Users, UserPlus, Trash2, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
+import AuditNavigation from '@/components/audit/AuditNavigation';
 
 interface TeamMember {
   user_id: string;
@@ -194,18 +195,13 @@ export default function AuditTeamPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <AuditNavigation auditId={auditId} audit={audit} />
+      
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Audit Team Assignment</h1>
-          <p className="text-gray-600 mt-2">ISO 19011 Clause 6.2 - Audit team assignment with competency validation</p>
-          <p className="text-sm text-gray-500">Audit: {audit.title} ({audit.year})</p>
+          <h2 className="text-xl font-semibold">Audit Team Assignment</h2>
+          <p className="text-gray-600 mt-1">ISO 19011 Clause 6.2 - Audit team assignment with competency validation</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/audits/${auditId}/initiate`)}
-        >
-          Back to Initiation
-        </Button>
       </div>
 
       {error && (

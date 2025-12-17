@@ -5,8 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Audit, User as UserType } from '@/lib/types';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import AuditNavigation from '@/components/audit/AuditNavigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -18,8 +18,6 @@ import {
   AlertTriangle, 
   CheckCircle, 
   XCircle,
-  ExternalLink,
-  ArrowLeft,
   Plus,
   X,
   Upload,
@@ -240,16 +238,6 @@ export default function FollowUpPage() {
     }
   };
 
-  const tabs = [
-    { name: 'Overview', href: `/audits/${auditId}` },
-    { name: 'Work Program', href: `/audits/${auditId}/work-program` },
-    { name: 'Evidence', href: `/audits/${auditId}/evidence` },
-    { name: 'Findings', href: `/audits/${auditId}/findings` },
-    { name: 'Queries', href: `/audits/${auditId}/queries` },
-    { name: 'Report', href: `/audits/${auditId}/report` },
-    { name: 'Follow-up', href: `/audits/${auditId}/followup`, active: true },
-  ];
-
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -283,32 +271,7 @@ export default function FollowUpPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <Link href="/audits" className="text-primary-600 hover:underline mb-2 inline-flex items-center">
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Audits
-        </Link>
-        <h1 className="text-3xl font-bold">{audit?.title || 'Loading...'}</h1>
-        <p className="text-gray-600 mt-2">Audit ID: {audit?.id}</p>
-      </div>
-
-      <div className="border-b border-gray-200 mb-6">
-        <div className="flex gap-4 overflow-x-auto">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.name}
-              href={tab.href}
-              className={`px-4 py-2 border-b-2 whitespace-nowrap ${
-                tab.active
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent hover:border-primary-600'
-              }`}
-            >
-              {tab.name}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <AuditNavigation auditId={auditId} audit={audit} />
 
       {/* Summary Statistics */}
       {followupData?.summary && (
