@@ -234,7 +234,9 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
       await loadRoles();
     } catch (err: any) {
       console.error('Error saving role:', err);
-      setError('Failed to save role');
+      // Extract error message from API response
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to save role';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
