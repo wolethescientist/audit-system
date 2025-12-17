@@ -310,62 +310,6 @@ export default function FollowUpPage() {
         </div>
       </div>
 
-      {/* Navigation Links */}
-      {followupData?.navigation && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ExternalLink className="w-5 h-5" />
-              Quick Navigation
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button 
-                variant="outline" 
-                asChild
-                className="justify-start"
-              >
-                <Link href={followupData.navigation.navigation_links.audit_overview}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Audit Overview
-                </Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                asChild
-                className="justify-start"
-              >
-                <Link href={followupData.navigation.navigation_links.audit_findings}>
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Findings
-                </Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                asChild
-                className="justify-start"
-              >
-                <Link href={followupData.navigation.navigation_links.audit_evidence}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Evidence
-                </Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                asChild
-                className="justify-start"
-              >
-                <Link href={followupData.navigation.navigation_links.audit_report}>
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Report
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Summary Statistics */}
       {followupData?.summary && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
