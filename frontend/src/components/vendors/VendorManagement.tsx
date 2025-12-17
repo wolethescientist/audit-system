@@ -225,13 +225,36 @@ export default function VendorManagement({ vendor, onClose, onSuccess }: VendorM
     setError(null);
 
     try {
-      const submitData = {
-        ...formData,
-        insurance_coverage: formData.insurance_coverage ? parseFloat(formData.insurance_coverage) : null,
-        performance_rating: formData.performance_rating ? parseInt(formData.performance_rating) : null,
+      // Convert empty strings to null for optional fields
+      const submitData: any = {
+        vendor_name: formData.vendor_name,
+        vendor_type: formData.vendor_type || null,
+        primary_contact_name: formData.primary_contact_name || null,
+        primary_contact_email: formData.primary_contact_email || null,
+        primary_contact_phone: formData.primary_contact_phone || null,
+        secondary_contact_name: formData.secondary_contact_name || null,
+        secondary_contact_email: formData.secondary_contact_email || null,
+        secondary_contact_phone: formData.secondary_contact_phone || null,
+        address_line1: formData.address_line1 || null,
+        address_line2: formData.address_line2 || null,
+        city: formData.city || null,
+        state_province: formData.state_province || null,
+        postal_code: formData.postal_code || null,
+        country: formData.country || null,
+        business_registration_number: formData.business_registration_number || null,
+        tax_identification_number: formData.tax_identification_number || null,
+        website: formData.website || null,
+        industry: formData.industry || null,
+        risk_rating: formData.risk_rating || 'MEDIUM',
+        status: formData.status || 'active',
         contract_start_date: formData.contract_start_date || null,
         contract_end_date: formData.contract_end_date || null,
+        iso_certifications: formData.iso_certifications.length > 0 ? formData.iso_certifications : null,
+        other_certifications: formData.other_certifications.length > 0 ? formData.other_certifications : null,
+        insurance_coverage: formData.insurance_coverage ? parseFloat(formData.insurance_coverage) : null,
         insurance_expiry: formData.insurance_expiry || null,
+        performance_rating: formData.performance_rating ? parseInt(formData.performance_rating) : null,
+        notes: formData.notes || null,
       };
 
       if (vendor) {
@@ -242,7 +265,17 @@ export default function VendorManagement({ vendor, onClose, onSuccess }: VendorM
 
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save vendor');
+      const detail = err.response?.data?.detail;
+      if (typeof detail === 'string') {
+        setError(detail);
+      } else if (Array.isArray(detail)) {
+        // FastAPI validation errors come as array
+        setError(detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', '));
+      } else if (detail) {
+        setError(JSON.stringify(detail));
+      } else {
+        setError('Failed to save vendor');
+      }
     } finally {
       setLoading(false);
     }
