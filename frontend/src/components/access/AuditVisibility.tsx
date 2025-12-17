@@ -42,6 +42,7 @@ interface User {
   email: string;
   role: string;
   department_id?: string;
+  is_active?: boolean;
 }
 
 interface AuditVisibilityProps {
