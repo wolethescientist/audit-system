@@ -13,6 +13,28 @@ interface CAPAFormProps {
   riskId?: string;
 }
 
+// Helper function to format date for HTML date input (yyyy-MM-dd)
+const formatDateForInput = (dateValue: string | undefined | null): string => {
+  if (!dateValue) return '';
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  } catch {
+    return '';
+  }
+};
+
+// Process initial data to format dates correctly
+const processInitialData = (data: Partial<CAPACreate> | undefined): Partial<CAPACreate> => {
+  if (!data) return {};
+  return {
+    ...data,
+    due_date: formatDateForInput(data.due_date),
+    target_completion_date: formatDateForInput(data.target_completion_date),
+  };
+};
+
 export default function CAPAForm({ 
   onSubmit, 
   onCancel, 
@@ -21,6 +43,8 @@ export default function CAPAForm({
   findingId, 
   riskId 
 }: CAPAFormProps) {
+  const processedInitialData = processInitialData(initialData);
+  
   const [formData, setFormData] = useState<CAPACreate>({
     title: '',
     description: '',
@@ -29,7 +53,7 @@ export default function CAPAForm({
     finding_id: findingId,
     risk_id: riskId,
     priority: 'medium',
-    ...initialData
+    ...processedInitialData
   });
 
   const [users, setUsers] = useState<User[]>([]);
