@@ -6,17 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import ReportGenerator from '@/components/reports/ReportGenerator';
+import ReportViewer from '@/components/reports/ReportViewer';
+
 // Simple icon components as fallbacks
 const FileText = ({ className }: { className?: string }) => <span className={className}>📄</span>;
 const Search = ({ className }: { className?: string }) => <span className={className}>🔍</span>;
 const Filter = ({ className }: { className?: string }) => <span className={className}>🔽</span>;
 const Calendar = ({ className }: { className?: string }) => <span className={className}>📅</span>;
 const Eye = ({ className }: { className?: string }) => <span className={className}>👁️</span>;
-const Download = ({ className }: { className?: string }) => <span className={className}>⬇️</span>;
 const Plus = ({ className }: { className?: string }) => <span className={className}>➕</span>;
 const Loader2 = ({ className }: { className?: string }) => <span className={`${className} animate-spin`}>⏳</span>;
 const AlertCircle = ({ className }: { className?: string }) => <span className={className}>⚠️</span>;
-import ReportViewer from '@/components/reports/ReportViewer';
+const ChevronRight = ({ className }: { className?: string }) => <span className={className}>›</span>;
+const ArrowLeft = ({ className }: { className?: string }) => <span className={className}>←</span>;
 
 interface Report {
   id: string;
@@ -27,7 +30,7 @@ interface Report {
   status: string;
   created_at: string;
   created_by_name: string;
-  word_count?: number;
+  content?: string;
 }
 
 interface Audit {
@@ -38,15 +41,17 @@ interface Audit {
   department_name: string;
 }
 
+type ViewMode = 'list' | 'select-audit' | 'generate' | 'view-report';
+
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [selectedAudit, setSelectedAudit] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReports();
@@ -55,11 +60,12 @@ export default function ReportsPage() {
 
   const fetchReports = async () => {
     try {
-      // This would be a real API call to get all reports
-      // For now, we'll simulate it
-      setReports([]);
+      const { api } = await import('@/lib/api');
+      const response = await api.get('/api/v1/reports/');
+      setReports(response.data?.data || []);
     } catch (err) {
-      setError('Failed to fetch reports');
+      console.error('Failed to fetch reports:', err);
+      setReports([]);
     }
   };
 
@@ -75,34 +81,72 @@ export default function ReportsPage() {
     }
   };
 
+
   const filteredReports = reports.filter(report =>
-    report.audit_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    report.created_by_name.toLowerCase().includes(searchTerm.toLowerCase())
+    report.audit_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    report.created_by_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredAudits = audits.filter(audit =>
-    audit.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    ['executing', 'reporting', 'followup', 'closed'].includes(audit.status)
+  // Filter audits that are ready for reporting
+  const auditsReadyForReporting = audits.filter(audit =>
+    ['executing', 'reporting', 'followup', 'closed'].includes(audit.status?.toLowerCase())
+  );
+
+  const filteredAuditsForSelection = auditsReadyForReporting.filter(audit =>
+    audit.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      draft: { variant: 'secondary' as const, label: 'Draft' },
-      under_review: { variant: 'default' as const, label: 'Under Review' },
-      approved: { variant: 'default' as const, label: 'Approved' },
-      published: { variant: 'default' as const, label: 'Published' }
+    const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
+      draft: { variant: 'secondary', label: 'Draft' },
+      under_review: { variant: 'default', label: 'Under Review' },
+      approved: { variant: 'default', label: 'Approved' },
+      published: { variant: 'default', label: 'Published' }
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
+    const config = statusConfig[status] || statusConfig.draft;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleGenerateClick = () => {
+    setViewMode('select-audit');
+    setSelectedAudit(null);
+  };
+
+  const handleAuditSelect = (audit: Audit) => {
+    setSelectedAudit(audit);
+  };
+
+  const handleStartGeneration = () => {
+    if (selectedAudit) {
+      setViewMode('generate');
+    }
+  };
+
+  const handleReportGenerated = () => {
+    fetchReports();
+    setViewMode('list');
+    setSelectedAudit(null);
+  };
+
+  const handleViewReport = (reportId: string) => {
+    setSelectedReport(reportId);
+    setViewMode('view-report');
+  };
+
+  const handleBack = () => {
+    setViewMode('list');
+    setSelectedAudit(null);
+    setSelectedReport(null);
   };
 
   if (loading) {
@@ -116,16 +160,14 @@ export default function ReportsPage() {
     );
   }
 
-  if (selectedReport) {
+  // View Report Mode
+  if (viewMode === 'view-report' && selectedReport) {
     return (
       <div className="container mx-auto p-6">
         <div className="mb-6">
-          <Button 
-            variant="outline" 
-            onClick={() => setSelectedReport(null)}
-            className="mb-4"
-          >
-            ← Back to Reports
+          <Button variant="outline" onClick={handleBack} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Reports
           </Button>
         </div>
         <ReportViewer reportId={selectedReport} />
@@ -133,6 +175,125 @@ export default function ReportsPage() {
     );
   }
 
+  // Generate Report Mode
+  if (viewMode === 'generate' && selectedAudit) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button variant="outline" onClick={handleBack} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Reports
+          </Button>
+        </div>
+        <ReportGenerator 
+          auditId={selectedAudit.id}
+          auditTitle={selectedAudit.title}
+          onReportGenerated={handleReportGenerated}
+        />
+      </div>
+    );
+  }
+
+  // Select Audit Mode
+  if (viewMode === 'select-audit') {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Generate New Report</h1>
+            <p className="text-muted-foreground">
+              Select an audit to generate an ISO 19011 compliant report
+            </p>
+          </div>
+          <Button variant="outline" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Cancel
+          </Button>
+        </div>
+
+        {/* Search */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search audits..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Audit Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Available Audits ({filteredAuditsForSelection.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {filteredAuditsForSelection.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No audits ready for reporting</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Audits must be in executing, reporting, followup, or closed status
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredAuditsForSelection.map((audit) => (
+                  <div
+                    key={audit.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                      selectedAudit?.id === audit.id 
+                        ? 'border-primary bg-primary/5' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => handleAuditSelect(audit)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium">{audit.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {audit.year} • {audit.department_name}
+                        </p>
+                        <Badge variant="outline" className="mt-2">
+                          {audit.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {selectedAudit?.id === audit.id && (
+                          <Badge variant="default">Selected</Badge>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Generate Button */}
+        {selectedAudit && (
+          <div className="flex justify-end">
+            <Button size="lg" onClick={handleStartGeneration}>
+              <FileText className="h-4 w-4 mr-2" />
+              Generate Report for "{selectedAudit.title}"
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+
+  // Default List View
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -143,6 +304,10 @@ export default function ReportsPage() {
             Generate and manage ISO 19011 compliant audit reports
           </p>
         </div>
+        <Button onClick={handleGenerateClick}>
+          <Plus className="h-4 w-4 mr-2" />
+          Generate New Report
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -152,7 +317,7 @@ export default function ReportsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search reports or audits..."
+                placeholder="Search reports..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -173,133 +338,75 @@ export default function ReportsPage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Existing Reports */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Generated Reports ({filteredReports.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredReports.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No reports generated yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => setSelectedReport(report.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{report.audit_title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Version {report.version} • {formatDate(report.created_at)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          by {report.created_by_name}
-                        </p>
-                        {report.word_count && (
-                          <p className="text-sm text-muted-foreground">
-                            {report.word_count.toLocaleString()} words
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(report.status)}
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Available Audits for Report Generation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              Generate New Report ({filteredAudits.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredAudits.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  No audits ready for reporting
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Audits must be in executing, reporting, followup, or closed status
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredAudits.map((audit) => (
-                  <div
-                    key={audit.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{audit.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {audit.year} • {audit.department_name}
-                        </p>
-                        <Badge variant="outline" className="mt-2">
-                          {audit.status}
-                        </Badge>
-                      </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => setSelectedAudit(audit.id)}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Generate
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Report Generation Modal/View */}
-      {selectedAudit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Generate Report</h2>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedAudit(null)}
-                >
-                  Close
-                </Button>
+      {/* Generated Reports List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Generated Reports ({filteredReports.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredReports.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No reports generated yet</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Click "Generate New Report" to create your first report
+              </p>
+              <Button className="mt-4" onClick={handleGenerateClick}>
+                <Plus className="h-4 w-4 mr-2" />
+                Generate New Report
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Table Header */}
+              <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-muted rounded-lg text-sm font-medium text-muted-foreground">
+                <div className="col-span-4">Audit</div>
+                <div className="col-span-2">Year</div>
+                <div className="col-span-2">Version</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Actions</div>
               </div>
               
-              <ReportViewer 
-                auditId={selectedAudit}
-                showGenerateButton={false}
-              />
+              {/* Report Rows */}
+              {filteredReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="grid grid-cols-12 gap-4 px-4 py-3 border rounded-lg hover:bg-muted/50 transition-colors items-center"
+                >
+                  <div className="col-span-4">
+                    <h3 className="font-medium truncate">{report.audit_title}</h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      by {report.created_by_name} • {formatDate(report.created_at)}
+                    </p>
+                  </div>
+                  <div className="col-span-2 text-sm">
+                    {report.audit_year || 'N/A'}
+                  </div>
+                  <div className="col-span-2 text-sm">
+                    v{report.version}
+                  </div>
+                  <div className="col-span-2">
+                    {getStatusBadge(report.status)}
+                  </div>
+                  <div className="col-span-2 flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleViewReport(report.id)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

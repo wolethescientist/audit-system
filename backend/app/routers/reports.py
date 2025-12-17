@@ -211,6 +211,67 @@ async def download_report(
             detail=f"Report download failed: {str(e)}"
         )
 
+@router.get("/")
+async def get_all_reports(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """
+    Get all reports accessible to the current user.
+    
+    Args:
+        db (Session): Database session
+        current_user (User): Authenticated user
+        
+    Returns:
+        Dict[str, Any]: List of reports
+    """
+    try:
+        # Get all reports with audit info
+        reports_query = db.query(AuditReport).join(Audit, AuditReport.audit_id == Audit.id)
+        
+        # Filter based on user role
+        if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
+            if current_user.role == UserRole.AUDITOR:
+                reports_query = reports_query.filter(
+                    (Audit.assigned_manager_id == current_user.id) |
+                    (Audit.lead_auditor_id == current_user.id) |
+                    (Audit.created_by_id == current_user.id)
+                )
+            else:
+                reports_query = reports_query.filter(Audit.department_id == current_user.department_id)
+        
+        reports = reports_query.all()
+        
+        # Build response with audit info
+        result = []
+        for report in reports:
+            audit = db.query(Audit).filter(Audit.id == report.audit_id).first()
+            created_by = db.query(User).filter(User.id == report.created_by_id).first()
+            result.append({
+                "id": str(report.id),
+                "audit_id": str(report.audit_id),
+                "audit_title": audit.title if audit else "Unknown",
+                "audit_year": audit.year if audit else None,
+                "version": report.version,
+                "status": report.status,
+                "created_at": report.created_at.isoformat() if report.created_at else None,
+                "created_by_name": created_by.full_name if created_by else "Unknown",
+                "content": report.content[:200] + "..." if report.content and len(report.content) > 200 else report.content
+            })
+        
+        return {
+            "success": True,
+            "data": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get reports: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve reports: {str(e)}"
+        )
+
 @router.get("/{report_id}")
 async def get_report(
     report_id: UUID,
