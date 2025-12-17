@@ -149,14 +149,39 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
     setError(null);
 
     try {
-      const submitData = {
-        ...formData,
+      // Clean up the data - convert empty strings to null for optional fields
+      const submitData: Record<string, any> = {
+        asset_name: formData.asset_name,
+        asset_category: formData.asset_category,
+        asset_type: formData.asset_type || null,
         asset_value: formData.asset_value ? parseFloat(formData.asset_value) : null,
-        disposal_value: formData.disposal_value ? parseFloat(formData.disposal_value) : null,
+        criticality_level: formData.criticality_level || null,
         procurement_date: formData.procurement_date || null,
         warranty_expiry: formData.warranty_expiry || null,
-        disposal_date: formData.disposal_date || null,
+        owner_id: formData.owner_id || null,
+        custodian_id: formData.custodian_id || null,
+        department_id: formData.department_id || null,
+        location: formData.location || null,
+        serial_number: formData.serial_number || null,
+        model: formData.model || null,
+        vendor: formData.vendor || null,
+        notes: formData.notes || null,
       };
+
+      // Only include disposal fields for updates or if status is disposed
+      if (asset) {
+        submitData.status = formData.status;
+        submitData.disposal_date = formData.disposal_date || null;
+        submitData.disposal_value = formData.disposal_value ? parseFloat(formData.disposal_value) : null;
+        submitData.disposal_method = formData.disposal_method || null;
+      }
+
+      // Remove null values for cleaner payload (backend handles missing fields)
+      Object.keys(submitData).forEach(key => {
+        if (submitData[key] === null) {
+          delete submitData[key];
+        }
+      });
 
       if (asset) {
         await assetApi.updateAsset(asset.id, submitData);
@@ -166,7 +191,13 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
 
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save asset');
+      const errorDetail = err.response?.data?.detail;
+      // Handle validation errors that come as arrays
+      if (Array.isArray(errorDetail)) {
+        setError(errorDetail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', '));
+      } else {
+        setError(errorDetail || 'Failed to save asset');
+      }
     } finally {
       setLoading(false);
     }
