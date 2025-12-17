@@ -115,7 +115,12 @@ def list_workflows(
         query = query.filter(Workflow.audit_id == audit_id)
     
     if status:
-        query = query.filter(Workflow.status == status)
+        # Convert status to uppercase to match WorkflowStatus enum values
+        try:
+            status_enum = WorkflowStatus(status.upper())
+            query = query.filter(Workflow.status == status_enum)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid status value: {status}")
     
     workflows = query.order_by(Workflow.created_at.desc()).all()
     return workflows
