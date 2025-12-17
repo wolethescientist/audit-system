@@ -34,10 +34,16 @@ export const documentApi = {
     const formData = new FormData();
     formData.append('file', file);
     
-    // Append all document metadata
+    // Append all document metadata, filtering out empty values
     Object.keys(documentData).forEach(key => {
-      if (documentData[key] !== undefined && documentData[key] !== null) {
-        formData.append(key, documentData[key]);
+      const value = documentData[key];
+      // Skip undefined, null, and empty strings (except for booleans and numbers)
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, String(value));
+      } else if (typeof value === 'boolean') {
+        formData.append(key, String(value));
+      } else if (typeof value === 'number' && !isNaN(value)) {
+        formData.append(key, String(value));
       }
     });
 
@@ -86,12 +92,11 @@ export const documentApi = {
     return response.data;
   },
 
-  // Download document
+  // Download document - returns file info with URL for Supabase files
   downloadDocument: async (docId: string) => {
-    const response = await api.get(`/api/v1/documents/${docId}/download`, {
-      responseType: 'blob'
-    });
-    return response;
+    // First try to get JSON response (for Supabase-stored files)
+    const response = await api.get(`/api/v1/documents/${docId}/download`);
+    return response.data;
   },
 
   // Add document tag

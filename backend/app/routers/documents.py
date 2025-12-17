@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, asc, func
 from typing import List, Optional
@@ -22,6 +22,7 @@ from app.schemas import (
     DocumentExpiringResponse, DocumentTagCreate, DocumentTagResponse,
     UserResponse
 )
+from app.services.supabase_storage_service import supabase_storage
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
@@ -110,7 +111,7 @@ async def upload_document(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Upload document with virus scanning and integrity checking.
+    Upload document to Supabase Storage with integrity checking.
     Implements ISO 9001 Clause 7.5.3 document control requirements.
     """
     # Validate file type
@@ -120,43 +121,57 @@ async def upload_document(
             detail=f"File type {file.content_type} not allowed"
         )
     
+    # Read file content
+    file_content = await file.read()
+    file_size = len(file_content)
+    
     # Validate file size
-    if file.size > MAX_FILE_SIZE:
+    if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=400, 
             detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE} bytes"
         )
     
-    # Generate unique filename and document number
-    file_extension = Path(file.filename).suffix
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Generate document number
     document_number = generate_document_number()
     
     try:
-        # Save file to disk
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
+        # Upload to Supabase Storage
+        upload_result = supabase_storage.upload_file(
+            file_content=file_content,
+            file_name=file.filename,
+            audit_id=f"documents/{document_number}",  # Use documents folder
+            user_id=str(current_user.id),
+            content_type=file.content_type
+        )
         
-        # Virus scan
-        if not virus_scan_file(str(file_path)):
-            os.remove(file_path)
+        if not upload_result.get("success"):
             raise HTTPException(
-                status_code=400, 
-                detail="File failed security scan"
+                status_code=500,
+                detail=f"Failed to upload to storage: {upload_result.get('error', 'Unknown error')}"
             )
-        
-        # Calculate file hash for integrity
-        file_hash = calculate_file_hash(str(file_path))
         
         # Parse dates
         effective_dt = None
         expiry_dt = None
         if effective_date:
-            effective_dt = datetime.fromisoformat(effective_date.replace('Z', '+00:00'))
+            try:
+                effective_dt = datetime.fromisoformat(effective_date.replace('Z', '+00:00'))
+            except ValueError:
+                # Try parsing as date only (YYYY-MM-DD)
+                try:
+                    effective_dt = datetime.strptime(effective_date, "%Y-%m-%d")
+                except ValueError:
+                    pass
         if expiry_date:
-            expiry_dt = datetime.fromisoformat(expiry_date.replace('Z', '+00:00'))
+            try:
+                expiry_dt = datetime.fromisoformat(expiry_date.replace('Z', '+00:00'))
+            except ValueError:
+                # Try parsing as date only (YYYY-MM-DD)
+                try:
+                    expiry_dt = datetime.strptime(expiry_date, "%Y-%m-%d")
+                except ValueError:
+                    pass
         
         # Calculate next review date
         next_review_dt = None
@@ -165,7 +180,7 @@ async def upload_document(
         
         # Parse department_id
         dept_id = None
-        if department_id:
+        if department_id and department_id.strip():
             try:
                 dept_id = uuid.UUID(department_id)
             except ValueError:
@@ -178,10 +193,10 @@ async def upload_document(
             document_type=document_type,
             category=category,
             version="1.0",
-            file_url=str(file_path),
+            file_url=upload_result["file_url"],
             file_name=file.filename,
-            file_hash=file_hash,
-            file_size=file.size,
+            file_hash=upload_result["file_hash"],
+            file_size=file_size,
             mime_type=file.content_type,
             approval_status=DocumentStatus.DRAFT,
             effective_date=effective_dt,
@@ -206,16 +221,16 @@ async def upload_document(
             after_values={
                 "document_number": document_number,
                 "document_name": document_name,
-                "document_type": document_type
+                "document_type": document_type,
+                "storage": "supabase"
             }
         )
         
         return document
         
+    except HTTPException:
+        raise
     except Exception as e:
-        # Clean up file if database operation fails
-        if file_path.exists():
-            os.remove(file_path)
         raise HTTPException(status_code=500, detail=f"Failed to upload document: {str(e)}")
 
 @router.put("/{doc_id}/approve", response_model=DocumentResponse)
@@ -580,15 +595,25 @@ def download_document(
             document.uploaded_by_id != current_user.id):
             raise HTTPException(status_code=403, detail="Access denied")
     
-    # Check if file exists
-    if not os.path.exists(document.file_url):
-        raise HTTPException(status_code=404, detail="File not found on disk")
-    
     # Log download
     log_document_action(
         db, current_user.id, "DOWNLOAD", document.id,
         after_values={"document_name": document.document_name, "file_name": document.file_name}
     )
+    
+    # Check if file is stored in Supabase (URL starts with http)
+    if document.file_url.startswith("http"):
+        # Return download info for Supabase-stored files
+        return {
+            "file_name": document.file_name,
+            "file_url": document.file_url,
+            "file_size": document.file_size,
+            "mime_type": document.mime_type
+        }
+    
+    # Legacy: Check if file exists on disk (for old local files)
+    if not os.path.exists(document.file_url):
+        raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(
         path=document.file_url,

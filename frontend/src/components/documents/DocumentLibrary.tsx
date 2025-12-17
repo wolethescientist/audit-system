@@ -193,16 +193,28 @@ export default function DocumentLibrary({
     try {
       const response = await documentApi.downloadDocument(document.id);
       
-      // Create blob and download
-      const blob = new Blob([response.data], { type: document.mime_type });
-      const url = window.URL.createObjectURL(blob);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = document.file_name;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Check if response contains a file_url (Supabase storage)
+      if (response.file_url) {
+        // Open the Supabase URL in a new tab or trigger download
+        const link = window.document.createElement('a');
+        link.href = response.file_url;
+        link.download = response.file_name || document.file_name;
+        link.target = '_blank';
+        window.document.body.appendChild(link);
+        link.click();
+        window.document.body.removeChild(link);
+      } else {
+        // Legacy: Create blob and download for local files
+        const blob = new Blob([response.data], { type: document.mime_type });
+        const url = window.URL.createObjectURL(blob);
+        const link = window.document.createElement('a');
+        link.href = url;
+        link.download = document.file_name;
+        window.document.body.appendChild(link);
+        link.click();
+        window.document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
 
       if (onDocumentDownload) {
         onDocumentDownload(document);
