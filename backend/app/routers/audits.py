@@ -45,6 +45,20 @@ def list_audits(
     audits = get_accessible_audits(current_user, db)
     return audits
 
+# Findings - must be before /{audit_id} to avoid route conflict
+@router.get("/findings", response_model=List[FindingResponse])
+def list_all_findings_query(
+    audit_id: Optional[UUID] = Query(None, description="Filter by audit ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List findings with optional audit_id filter via query parameter"""
+    query = db.query(AuditFinding)
+    if audit_id:
+        query = query.filter(AuditFinding.audit_id == audit_id)
+    findings = query.all()
+    return findings
+
 @router.get("/{audit_id}", response_model=AuditResponse)
 def get_audit(
     audit_id: UUID,
@@ -288,20 +302,7 @@ def delete_evidence(
     
     return {"success": True, "message": "Evidence deleted successfully"}
 
-# Findings
-@router.get("/findings", response_model=List[FindingResponse])
-def list_all_findings(
-    audit_id: Optional[UUID] = Query(None, description="Filter by audit ID"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """List findings with optional audit_id filter via query parameter"""
-    query = db.query(AuditFinding)
-    if audit_id:
-        query = query.filter(AuditFinding.audit_id == audit_id)
-    findings = query.all()
-    return findings
-
+# Findings (POST and path-based GET)
 @router.post("/{audit_id}/findings", response_model=FindingResponse)
 def create_finding(
     audit_id: UUID,
