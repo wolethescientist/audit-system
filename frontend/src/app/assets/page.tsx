@@ -354,7 +354,10 @@ export default function AssetsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedAsset(asset)}
+                          onClick={() => {
+                            setSelectedAsset(asset);
+                            setShowEditModal(true);
+                          }}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
