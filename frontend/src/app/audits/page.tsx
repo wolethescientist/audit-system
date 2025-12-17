@@ -1,11 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Audit } from '@/lib/types';
 import Link from 'next/link';
 
+const AUDIT_STATUSES = ['all', 'planned', 'executing', 'reporting', 'followup', 'closed'] as const;
+
 export default function AuditsPage() {
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
   const { data: audits, isLoading } = useQuery<Audit[]>({
     queryKey: ['audits'],
     queryFn: async () => {
@@ -13,6 +18,10 @@ export default function AuditsPage() {
       return response.data;
     },
   });
+
+  const filteredAudits = audits?.filter((audit: any) => 
+    statusFilter === 'all' || audit.status?.toLowerCase() === statusFilter
+  );
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -22,7 +31,7 @@ export default function AuditsPage() {
       followup: 'bg-gray-200 text-gray-900',
       closed: 'bg-green-600 text-white',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -33,10 +42,28 @@ export default function AuditsPage() {
           Create Audit
         </Link>
       </div>
+
+      <div className="mb-6">
+        <label htmlFor="status-filter" className="mr-3 text-sm font-medium text-gray-700">
+          Filter by Status:
+        </label>
+        <select
+          id="status-filter"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
+          {AUDIT_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status === 'all' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
       
       {isLoading ? (
         <div className="card">Loading audits...</div>
-      ) : audits && audits.length > 0 ? (
+      ) : filteredAudits && filteredAudits.length > 0 ? (
         <div className="card">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -50,7 +77,7 @@ export default function AuditsPage() {
                 </tr>
               </thead>
               <tbody>
-                {audits.map((audit: any) => (
+                {filteredAudits.map((audit: any) => (
                   <tr key={audit.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4">{audit.title}</td>
                     <td className="py-3 px-4">{audit.year}</td>
@@ -70,6 +97,16 @@ export default function AuditsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      ) : audits && audits.length > 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-gray-500 mb-4">No audits match the selected filter</p>
+          <button 
+            onClick={() => setStatusFilter('all')} 
+            className="text-primary-600 hover:underline"
+          >
+            Clear filter
+          </button>
         </div>
       ) : (
         <div className="card text-center py-12">
