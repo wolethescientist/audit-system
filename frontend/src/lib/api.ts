@@ -65,8 +65,17 @@ export const documentApi = {
 
   // Search documents
   searchDocuments: async (searchParams: any) => {
+    // Filter out empty/null/undefined values to avoid validation errors
+    const cleanParams: Record<string, any> = {};
+    Object.keys(searchParams).forEach(key => {
+      const value = searchParams[key];
+      if (value !== undefined && value !== null && value !== '') {
+        cleanParams[key] = value;
+      }
+    });
+    
     const response = await api.get('/api/v1/documents/search', {
-      params: searchParams
+      params: cleanParams
     });
     return response.data;
   },
