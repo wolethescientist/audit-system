@@ -104,13 +104,13 @@ const SelectContent = React.forwardRef<
     <>
       {/* Backdrop to close on click outside */}
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-[100]"
         onClick={() => context.setOpen(false)}
       />
       <div
         ref={ref}
         className={cn(
-          "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md",
+          "absolute z-[101] mt-1 max-h-60 w-full overflow-auto rounded-md border bg-white text-popover-foreground shadow-lg",
           className
         )}
         {...props}
