@@ -509,8 +509,6 @@ export default function DocumentLibrary({
                   )}
 
                   <div className="flex items-center gap-2 text-gray-500">
-                    <span>{document.file_name}</span>
-                    <span className="text-gray-300">•</span>
                     <span>{formatFileSize(document.file_size)}</span>
                   </div>
                 </div>
