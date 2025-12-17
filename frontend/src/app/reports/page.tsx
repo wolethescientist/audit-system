@@ -72,10 +72,11 @@ export default function ReportsPage() {
   const fetchAudits = async () => {
     try {
       const { api } = await import('@/lib/api');
-      const response = await api.get('/audits');
+      const response = await api.get('/audits/');
       setAudits(response.data || []);
     } catch (err) {
       console.error('Failed to fetch audits:', err);
+      setAudits([]);
     } finally {
       setLoading(false);
     }
@@ -87,14 +88,15 @@ export default function ReportsPage() {
     report.created_by_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter audits that are ready for reporting
-  const auditsReadyForReporting = audits.filter(audit =>
-    ['executing', 'reporting', 'followup', 'closed'].includes(audit.status?.toLowerCase())
-  );
-
-  const filteredAuditsForSelection = auditsReadyForReporting.filter(audit =>
+  // Filter audits based on search term
+  const filteredAuditsForSelection = audits.filter(audit =>
     audit.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Check if audit is ready for reporting
+  const isAuditReadyForReporting = (status: string) => {
+    return ['executing', 'reporting', 'followup', 'closed'].includes(status?.toLowerCase());
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
@@ -238,42 +240,54 @@ export default function ReportsPage() {
             {filteredAuditsForSelection.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No audits ready for reporting</p>
+                <p className="text-muted-foreground">No audits found</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Audits must be in executing, reporting, followup, or closed status
+                  Create an audit first to generate reports
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredAuditsForSelection.map((audit) => (
-                  <div
-                    key={audit.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                      selectedAudit?.id === audit.id 
-                        ? 'border-primary bg-primary/5' 
-                        : 'hover:bg-muted/50'
-                    }`}
-                    onClick={() => handleAuditSelect(audit)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{audit.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {audit.year} • {audit.department_name}
-                        </p>
-                        <Badge variant="outline" className="mt-2">
-                          {audit.status}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {selectedAudit?.id === audit.id && (
-                          <Badge variant="default">Selected</Badge>
-                        )}
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                {filteredAuditsForSelection.map((audit) => {
+                  const isReady = isAuditReadyForReporting(audit.status);
+                  return (
+                    <div
+                      key={audit.id}
+                      className={`border rounded-lg p-4 transition-colors ${
+                        !isReady 
+                          ? 'opacity-60 cursor-not-allowed' 
+                          : selectedAudit?.id === audit.id 
+                            ? 'border-primary bg-primary/5 cursor-pointer' 
+                            : 'hover:bg-muted/50 cursor-pointer'
+                      }`}
+                      onClick={() => isReady && handleAuditSelect(audit)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{audit.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {audit.year} • {audit.department_name || 'No department'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline">
+                              {audit.status}
+                            </Badge>
+                            {!isReady && (
+                              <span className="text-xs text-muted-foreground">
+                                (Not ready for reporting)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedAudit?.id === audit.id && (
+                            <Badge variant="default">Selected</Badge>
+                          )}
+                          {isReady && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
