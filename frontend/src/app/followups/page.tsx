@@ -157,62 +157,74 @@ export default function FollowupsPage() {
       )}
       
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold">{stats?.total_followups || 0}</p>
+              <Calendar className="h-6 w-6 text-blue-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Total</p>
+                <p className="text-xl font-bold">{stats?.total_followups || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <Clock className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold">{stats?.by_status.pending || 0}</p>
+              <Clock className="h-6 w-6 text-yellow-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Pending</p>
+                <p className="text-xl font-bold">{stats?.by_status.pending || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <User className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold">{stats?.by_status.in_progress || 0}</p>
+              <User className="h-6 w-6 text-blue-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">In Progress</p>
+                <p className="text-xl font-bold">{stats?.by_status.in_progress || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold">{stats?.by_status.completed || 0}</p>
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Completed</p>
+                <p className="text-xl font-bold">{stats?.by_status.completed || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Overdue</p>
-                <p className="text-2xl font-bold">{stats?.overdue_count || 0}</p>
+              <XCircle className="h-6 w-6 text-gray-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Closed</p>
+                <p className="text-xl font-bold">{stats?.by_status.closed || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600">Overdue</p>
+                <p className="text-xl font-bold">{stats?.overdue_count || 0}</p>
               </div>
             </div>
           </CardContent>

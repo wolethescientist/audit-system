@@ -110,20 +110,22 @@ def get_my_followups(
     Get user-specific follow-up list with advanced filtering and sorting
     Requirements: 2.5, 14.1, 14.2, 14.3, 14.4
     """
+    from sqlalchemy import func
+    
     # Base query for user's assigned follow-ups
     query = db.query(AuditFollowup).filter(
         AuditFollowup.assigned_to_id == current_user.id
     )
     
-    # Apply filters
+    # Apply filters (case-insensitive status comparison)
     if status:
-        query = query.filter(AuditFollowup.status == status)
+        query = query.filter(func.lower(AuditFollowup.status) == status.lower())
     
     if overdue_only:
         query = query.filter(
             and_(
                 AuditFollowup.due_date < datetime.utcnow(),
-                AuditFollowup.status.notin_(["completed", "closed"])
+                func.lower(AuditFollowup.status).notin_(["completed", "closed"])
             )
         )
     
@@ -177,15 +179,17 @@ def get_department_followups(
         AuditFollowup.assigned_to_id.in_(department_user_ids)
     )
     
-    # Apply filters
+    # Apply filters (case-insensitive status comparison)
+    from sqlalchemy import func
+    
     if status:
-        query = query.filter(AuditFollowup.status == status)
+        query = query.filter(func.lower(AuditFollowup.status) == status.lower())
     
     if overdue_only:
         query = query.filter(
             and_(
                 AuditFollowup.due_date < datetime.utcnow(),
-                AuditFollowup.status.notin_(["completed", "closed"])
+                func.lower(AuditFollowup.status).notin_(["completed", "closed"])
             )
         )
     
@@ -244,15 +248,22 @@ def get_audit_followups_with_navigation(
         }
     }
     
+    # Helper for case-insensitive status comparison
+    def status_matches(followup_status, target_status):
+        return followup_status and followup_status.lower() == target_status.lower()
+    
+    def status_in(followup_status, target_statuses):
+        return followup_status and followup_status.lower() in [s.lower() for s in target_statuses]
+    
     return {
         "followups": followups_data,
         "navigation": navigation,
         "summary": {
             "total_followups": len(followups),
-            "pending": len([f for f in followups if f.status == "pending"]),
-            "in_progress": len([f for f in followups if f.status == "in_progress"]),
-            "completed": len([f for f in followups if f.status == "completed"]),
-            "overdue": len([f for f in followups if f.due_date and f.due_date < datetime.utcnow() and f.status not in ["completed", "closed"]])
+            "pending": len([f for f in followups if status_matches(f.status, "pending")]),
+            "in_progress": len([f for f in followups if status_matches(f.status, "in_progress")]),
+            "completed": len([f for f in followups if status_matches(f.status, "completed")]),
+            "overdue": len([f for f in followups if f.due_date and f.due_date < datetime.utcnow() and not status_in(f.status, ["completed", "closed"])])
         }
     }
 
@@ -315,22 +326,24 @@ def get_overdue_followup_notifications(
     now = datetime.utcnow()
     upcoming_date = now + timedelta(days=days_ahead)
     
-    # Get overdue follow-ups
+    from sqlalchemy import func
+    
+    # Get overdue follow-ups (case-insensitive status comparison)
     overdue_followups = db.query(AuditFollowup).filter(
         and_(
             AuditFollowup.assigned_to_id == current_user.id,
             AuditFollowup.due_date < now,
-            AuditFollowup.status.notin_(["completed", "closed"])
+            func.lower(AuditFollowup.status).notin_(["completed", "closed"])
         )
     ).all()
     
-    # Get upcoming due follow-ups
+    # Get upcoming due follow-ups (case-insensitive status comparison)
     upcoming_followups = db.query(AuditFollowup).filter(
         and_(
             AuditFollowup.assigned_to_id == current_user.id,
             AuditFollowup.due_date >= now,
             AuditFollowup.due_date <= upcoming_date,
-            AuditFollowup.status.notin_(["completed", "closed"])
+            func.lower(AuditFollowup.status).notin_(["completed", "closed"])
         )
     ).all()
     
@@ -360,9 +373,11 @@ def bulk_auto_close_completed_followups(
     Bulk auto-close completed follow-ups
     Requirements: 15.1, 15.2
     """
-    # Base query for completed follow-ups
+    from sqlalchemy import func
+    
+    # Base query for completed follow-ups (case-insensitive)
     query = db.query(AuditFollowup).filter(
-        AuditFollowup.status == "completed"
+        func.lower(AuditFollowup.status) == "completed"
     )
     
     if audit_id:
@@ -417,20 +432,26 @@ def get_followup_statistics(
     
     all_followups = query.all()
     
-    # Calculate statistics
+    # Calculate statistics (case-insensitive status comparison)
     now = datetime.utcnow()
+    
+    def status_matches(followup_status, target_status):
+        return followup_status and followup_status.lower() == target_status.lower()
+    
+    def status_in(followup_status, target_statuses):
+        return followup_status and followup_status.lower() in [s.lower() for s in target_statuses]
     
     stats = {
         "total_followups": len(all_followups),
         "by_status": {
-            "pending": len([f for f in all_followups if f.status == "pending"]),
-            "in_progress": len([f for f in all_followups if f.status == "in_progress"]),
-            "completed": len([f for f in all_followups if f.status == "completed"]),
-            "closed": len([f for f in all_followups if f.status == "closed"])
+            "pending": len([f for f in all_followups if status_matches(f.status, "pending")]),
+            "in_progress": len([f for f in all_followups if status_matches(f.status, "in_progress")]),
+            "completed": len([f for f in all_followups if status_matches(f.status, "completed")]),
+            "closed": len([f for f in all_followups if status_matches(f.status, "closed")])
         },
-        "overdue_count": len([f for f in all_followups if f.due_date and f.due_date < now and f.status not in ["completed", "closed"]]),
-        "due_this_week": len([f for f in all_followups if f.due_date and f.due_date >= now and f.due_date <= now + timedelta(days=7) and f.status not in ["completed", "closed"]]),
-        "completion_rate": round((len([f for f in all_followups if f.status in ["completed", "closed"]]) / len(all_followups) * 100), 2) if all_followups else 0
+        "overdue_count": len([f for f in all_followups if f.due_date and f.due_date < now and not status_in(f.status, ["completed", "closed"])]),
+        "due_this_week": len([f for f in all_followups if f.due_date and f.due_date >= now and f.due_date <= now + timedelta(days=7) and not status_in(f.status, ["completed", "closed"])]),
+        "completion_rate": round((len([f for f in all_followups if status_in(f.status, ["completed", "closed"])]) / len(all_followups) * 100), 2) if all_followups else 0
     }
     
     return stats
