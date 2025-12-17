@@ -320,7 +320,7 @@ const GapRemediation: React.FC<GapRemediationProps> = ({
             <h4 className="text-sm font-medium text-blue-800 mb-2">Link to Existing CAPA</h4>
             <div className="flex flex-wrap gap-2">
               {capaItems
-                .filter(capa => capa.status !== 'closed')
+                .filter(capa => capa.status !== 'CLOSED')
                 .slice(0, 5)
                 .map(capa => (
                 <Button
