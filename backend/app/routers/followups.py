@@ -195,7 +195,7 @@ def get_department_followups(
     followups = query.order_by(AuditFollowup.due_date.asc()).all()
     return followups
 
-@router.get("/audit/{audit_id}/followups-with-navigation", response_model=dict)
+@router.get("/audit/{audit_id}/followups-with-navigation")
 def get_audit_followups_with_navigation(
     audit_id: UUID,
     db: Session = Depends(get_db),
@@ -215,9 +215,25 @@ def get_audit_followups_with_navigation(
         AuditFollowup.audit_id == audit_id
     ).order_by(AuditFollowup.due_date.asc()).all()
     
+    # Convert followups to serializable dicts
+    followups_data = [
+        {
+            "id": str(f.id),
+            "audit_id": str(f.audit_id),
+            "finding_id": str(f.finding_id) if f.finding_id else None,
+            "assigned_to_id": str(f.assigned_to_id) if f.assigned_to_id else None,
+            "due_date": f.due_date.isoformat() if f.due_date else None,
+            "status": f.status,
+            "evidence_url": f.evidence_url,
+            "completion_notes": f.completion_notes,
+            "created_at": f.created_at.isoformat() if f.created_at else None
+        }
+        for f in followups
+    ]
+    
     # Build navigation context
     navigation = {
-        "audit_id": audit_id,
+        "audit_id": str(audit_id),
         "audit_title": audit.title,
         "audit_status": audit.status.value,
         "navigation_links": {
@@ -229,7 +245,7 @@ def get_audit_followups_with_navigation(
     }
     
     return {
-        "followups": followups,
+        "followups": followups_data,
         "navigation": navigation,
         "summary": {
             "total_followups": len(followups),
@@ -281,6 +297,20 @@ def get_overdue_followup_notifications(
     Get follow-up notifications for due date alerts
     Requirements: 14.1, 14.4
     """
+    # Helper function to serialize followup
+    def serialize_followup(f):
+        return {
+            "id": str(f.id),
+            "audit_id": str(f.audit_id),
+            "finding_id": str(f.finding_id) if f.finding_id else None,
+            "assigned_to_id": str(f.assigned_to_id) if f.assigned_to_id else None,
+            "due_date": f.due_date.isoformat() if f.due_date else None,
+            "status": f.status,
+            "evidence_url": f.evidence_url,
+            "completion_notes": f.completion_notes,
+            "created_at": f.created_at.isoformat() if f.created_at else None
+        }
+    
     # Calculate date ranges
     now = datetime.utcnow()
     upcoming_date = now + timedelta(days=days_ahead)
@@ -307,11 +337,11 @@ def get_overdue_followup_notifications(
     return {
         "overdue": {
             "count": len(overdue_followups),
-            "items": overdue_followups
+            "items": [serialize_followup(f) for f in overdue_followups]
         },
         "upcoming": {
             "count": len(upcoming_followups),
-            "items": upcoming_followups
+            "items": [serialize_followup(f) for f in upcoming_followups]
         },
         "notification_summary": {
             "total_alerts": len(overdue_followups) + len(upcoming_followups),
