@@ -79,7 +79,7 @@ export default function DocumentsPage() {
       // Get basic document counts by searching with different filters
       const [totalResponse, pendingResponse, expiringResponse] = await Promise.all([
         documentApi.searchDocuments({ limit: 1 }),
-        documentApi.searchDocuments({ approval_status: 'draft', limit: 1 }),
+        documentApi.searchDocuments({ approval_status: 'DRAFT', limit: 1 }),
         documentApi.getExpiringDocuments(30, false)
       ]);
 
