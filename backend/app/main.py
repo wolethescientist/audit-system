@@ -66,6 +66,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
         "https://audit-system-nxef.vercel.app",
+        "https://audit.hikey.com.ng",
+        "https://www.audit.hikey.com.ng"
     ],
     allow_credentials=True,
     allow_methods=["*"],
