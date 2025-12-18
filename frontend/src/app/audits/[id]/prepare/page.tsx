@@ -181,14 +181,33 @@ export default function AuditPreparePage() {
   };
 
   const updateChecklistItem = async (checklistId: string, items: ChecklistItem[]) => {
+    // Optimistic update - update UI immediately
+    setChecklists(prevChecklists => 
+      prevChecklists.map(checklist => {
+        if (checklist.id === checklistId) {
+          const completedCount = items.filter(item => item.completed).length;
+          const totalItems = items.length;
+          return {
+            ...checklist,
+            checklist_items: items,
+            completed_items: completedCount,
+            completion_percentage: totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0
+          };
+        }
+        return checklist;
+      })
+    );
+
     try {
       await api.put(`/audits/${auditId}/checklist/${checklistId}`, {
         checklist_items: items
       });
-      await fetchChecklists();
-      await fetchPreparationStatus();
+      // Only refresh preparation status in background, don't await
+      fetchPreparationStatus();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to update checklist');
+      // Revert on error
+      fetchChecklists();
     }
   };
 
@@ -339,40 +358,37 @@ export default function AuditPreparePage() {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {preparationStatus.checklist_items_count === 0 ? 'N/A' : 
+                  <div className={`text-2xl font-bold ${preparationStatus.checklist_items_count === 0 ? 'text-gray-400' : 'text-blue-600'}`}>
+                    {preparationStatus.checklist_items_count === 0 ? '0%' : 
                       (isNaN(preparationStatus.checklist_completion) ? '100' : Math.round(preparationStatus.checklist_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Checklist Completion</div>
-                  {preparationStatus.checklist_items_count > 0 && (
-                    <div className="text-xs text-gray-500">
-                      {preparationStatus.completed_checklist_items || 0}/{preparationStatus.checklist_items_count} items
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500">
+                    {preparationStatus.checklist_items_count === 0 ? 'No checklist created' :
+                      `${preparationStatus.completed_checklist_items || 0}/${preparationStatus.checklist_items_count} items`}
+                  </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {preparationStatus.document_requests_count === 0 ? 'N/A' : 
+                  <div className={`text-2xl font-bold ${preparationStatus.document_requests_count === 0 ? 'text-gray-400' : 'text-green-600'}`}>
+                    {preparationStatus.document_requests_count === 0 ? '0%' : 
                       (isNaN(preparationStatus.document_completion) ? '100' : Math.round(preparationStatus.document_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Documents Received</div>
-                  {preparationStatus.document_requests_count > 0 && (
-                    <div className="text-xs text-gray-500">
-                      {preparationStatus.received_documents_count || 0}/{preparationStatus.document_requests_count} docs
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500">
+                    {preparationStatus.document_requests_count === 0 ? 'No documents requested' :
+                      `${preparationStatus.received_documents_count || 0}/${preparationStatus.document_requests_count} docs`}
+                  </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {preparationStatus.risk_assessments_count === 0 ? 'N/A' : 
+                  <div className={`text-2xl font-bold ${preparationStatus.risk_assessments_count === 0 ? 'text-gray-400' : 'text-purple-600'}`}>
+                    {preparationStatus.risk_assessments_count === 0 ? '0%' : 
                       (isNaN(preparationStatus.risk_assessment_completion) ? '100' : Math.round(preparationStatus.risk_assessment_completion)) + '%'}
                   </div>
                   <div className="text-sm text-gray-600">Risk Assessment</div>
-                  {preparationStatus.risk_assessments_count > 0 && (
-                    <div className="text-xs text-gray-500">
-                      {preparationStatus.risk_assessments_count} assessment(s)
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500">
+                    {preparationStatus.risk_assessments_count === 0 ? 'No assessments created' :
+                      `${preparationStatus.risk_assessments_count} assessment(s)`}
+                  </div>
                 </div>
               </div>
 
