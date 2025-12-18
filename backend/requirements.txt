@@ -9,7 +9,7 @@ python-multipart
 psycopg2-binary
 supabase
 pydantic[email]
-google-generativeai
+google-genai
 reportlab
 python-docx
 pandas

@@ -23,8 +23,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
-# Initialize report generation service
-report_service = ReportGenerationService()
+# Lazy initialize report generation service
+_report_service = None
+
+def get_report_service():
+    global _report_service
+    if _report_service is None:
+        _report_service = ReportGenerationService()
+    return _report_service
 
 @router.post("/generate/{audit_id}")
 async def generate_audit_report(
@@ -76,7 +82,7 @@ async def generate_audit_report(
         logger.info(f"User {current_user.id} generating report for audit {audit_id}")
         
         # Generate report using AI service
-        result = await report_service.generate_report(
+        result = await get_report_service().generate_report(
             audit_id=str(audit_id),
             db=db,
             user_id=str(current_user.id)
