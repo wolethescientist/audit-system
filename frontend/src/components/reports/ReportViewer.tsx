@@ -305,7 +305,7 @@ export default function ReportViewer({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button
               variant="outline"
               onClick={() => downloadReport('pdf')}
@@ -330,48 +330,6 @@ export default function ReportViewer({
                 <div className="font-medium">Word Document</div>
                 <div className="text-sm text-muted-foreground">
                   Editable DOCX format
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => downloadReport('csv')}
-              className="flex items-center gap-2 h-auto p-4"
-            >
-              <span className="text-2xl text-green-600">📊</span>
-              <div className="text-left">
-                <div className="font-medium">CSV Data</div>
-                <div className="text-sm text-muted-foreground">
-                  Data for analysis
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => downloadReport('html')}
-              className="flex items-center gap-2 h-auto p-4"
-            >
-              <span className="text-2xl text-orange-600">🌐</span>
-              <div className="text-left">
-                <div className="font-medium">HTML Page</div>
-                <div className="text-sm text-muted-foreground">
-                  Web page format
-                </div>
-              </div>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => downloadReport('markdown')}
-              className="flex items-center gap-2 h-auto p-4"
-            >
-              <span className="text-2xl text-purple-600">📝</span>
-              <div className="text-left">
-                <div className="font-medium">Markdown</div>
-                <div className="text-sm text-muted-foreground">
-                  Plain text with formatting
                 </div>
               </div>
             </Button>
