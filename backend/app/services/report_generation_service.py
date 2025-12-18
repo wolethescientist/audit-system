@@ -73,10 +73,9 @@ class ReportGenerationService:
             "sections_generated": ai_result["sections_generated"],
             "download_files": {
                 "pdf_content": pdf_content,
-                "docx_content": docx_content,
-                "markdown_content": ai_result["content"]
+                "docx_content": docx_content
             },
-            "supported_formats": ["pdf", "docx", "markdown"]
+            "supported_formats": ["pdf", "docx"]
         }
     
     def _save_report(self, audit_id: str, content: str, user_id: str, db: Session) -> AuditReport:

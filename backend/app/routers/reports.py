@@ -162,40 +162,24 @@ async def download_report(
         logger.info(f"User {current_user.id} downloading report {report_id} as {format}")
         
         # Generate content based on format
+        service = get_report_service()
+        
         if format.lower() == "pdf":
-            pdf_content = await report_service._generate_pdf_content(report.content, audit)
+            pdf_content = await service._generate_pdf_content(report.content, audit)
             file_content = base64.b64decode(pdf_content)
             filename = f"audit_report_{audit.year}_{audit.title.replace(' ', '_')}.pdf"
             media_type = "application/pdf"
             
         elif format.lower() == "docx":
-            docx_content = await report_service._generate_docx_content(report.content, audit)
+            docx_content = await service._generate_docx_content(report.content, audit)
             file_content = base64.b64decode(docx_content)
             filename = f"audit_report_{audit.year}_{audit.title.replace(' ', '_')}.docx"
             media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             
-        elif format.lower() == "csv":
-            csv_content = await report_service._generate_csv_content(audit, str(report_id))
-            file_content = csv_content.encode('utf-8')
-            filename = f"audit_data_{audit.year}_{audit.title.replace(' ', '_')}.csv"
-            media_type = "text/csv"
-            
-        elif format.lower() == "html":
-            html_content = await report_service._generate_html_content(report.content, audit)
-            file_content = html_content.encode('utf-8')
-            filename = f"audit_report_{audit.year}_{audit.title.replace(' ', '_')}.html"
-            media_type = "text/html"
-            
-        elif format.lower() == "markdown":
-            markdown_content = await report_service._generate_markdown_content(report.content, audit)
-            file_content = markdown_content.encode('utf-8')
-            filename = f"audit_report_{audit.year}_{audit.title.replace(' ', '_')}.md"
-            media_type = "text/markdown"
-            
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported format: {format}. Supported: pdf, docx, csv, html, markdown"
+                detail=f"Unsupported format: {format}. Supported: pdf, docx"
             )
         
         # Return file for download

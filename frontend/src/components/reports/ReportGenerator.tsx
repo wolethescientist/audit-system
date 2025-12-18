@@ -133,15 +133,9 @@ export default function ReportGenerator({
   const getFormatLabel = (format: string) => {
     switch (format) {
       case 'pdf':
-        return 'PDF Document';
+        return 'PDF';
       case 'docx':
-        return 'Word Document';
-      case 'csv':
-        return 'CSV Data';
-      case 'html':
-        return 'HTML Page';
-      case 'markdown':
-        return 'Markdown';
+        return 'Word';
       default:
         return format.toUpperCase();
     }
