@@ -8,11 +8,42 @@ from app.models import UserRole, AuditStatus, ReportStatus, FindingSeverity, Wor
 class Token(BaseModel):
     access_token: str
     token_type: str
+    requires_2fa: Optional[bool] = False
+    temp_token: Optional[str] = None  # Temporary token for 2FA verification
 
 class TokenData(BaseModel):
     user_id: UUID
     role: UserRole
     department_id: Optional[UUID] = None
+
+# 2FA Schemas
+class TwoFactorSetupResponse(BaseModel):
+    """Response for 2FA setup initiation"""
+    secret: str
+    qr_code: str  # Base64 encoded QR code image
+    backup_codes: List[str]
+    message: str
+
+class TwoFactorVerifyRequest(BaseModel):
+    """Request to verify 2FA code"""
+    code: str
+    temp_token: Optional[str] = None  # For login flow
+
+class TwoFactorVerifyResponse(BaseModel):
+    """Response for 2FA verification"""
+    success: bool
+    message: str
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
+
+class TwoFactorStatusResponse(BaseModel):
+    """Response for 2FA status check"""
+    enabled: bool
+    backup_codes_remaining: int
+
+class TwoFactorDisableRequest(BaseModel):
+    """Request to disable 2FA"""
+    code: str  # Current 2FA code to confirm disable
 
 # User Schemas
 class UserBase(BaseModel):
@@ -424,6 +455,7 @@ class WorkflowStepCreate(BaseModel):
     department_id: UUID
     assigned_to_id: Optional[UUID] = None
     action_required: str = "review_and_approve"
+    custom_action_text: Optional[str] = None  # Custom action instructions
     due_date: Optional[datetime] = None
 
 class WorkflowStepResponse(BaseModel):
@@ -433,6 +465,7 @@ class WorkflowStepResponse(BaseModel):
     department_id: UUID
     assigned_to_id: Optional[UUID] = None
     action_required: str = "review_and_approve"
+    custom_action_text: Optional[str] = None
     status: WorkflowStatus
     due_date: Optional[datetime] = None
     started_at: Optional[datetime] = None
@@ -444,7 +477,7 @@ class WorkflowStepResponse(BaseModel):
         use_enum_values = True
 
 class WorkflowCreate(BaseModel):
-    audit_id: UUID
+    audit_id: Optional[UUID] = None  # Now optional for standalone workflows
     name: str
     description: Optional[str] = None
     steps: List[WorkflowStepCreate]
@@ -452,7 +485,7 @@ class WorkflowCreate(BaseModel):
 class WorkflowResponse(BaseModel):
     id: UUID
     reference_number: str
-    audit_id: UUID
+    audit_id: Optional[UUID] = None  # Now optional
     name: str
     description: Optional[str] = None
     created_by_id: Optional[UUID] = None
@@ -460,13 +493,30 @@ class WorkflowResponse(BaseModel):
     current_step: int = 0
     created_at: datetime
     completed_at: Optional[datetime] = None
+    sender_name: Optional[str] = None
+    sender_department: Optional[str] = None
     
     class Config:
         from_attributes = True
         use_enum_values = True
 
+class WorkflowDocumentResponse(BaseModel):
+    id: UUID
+    workflow_id: UUID
+    file_name: str
+    file_url: str
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+    description: Optional[str] = None
+    uploaded_by_id: UUID
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class WorkflowDetailResponse(WorkflowResponse):
     steps: List[WorkflowStepResponse]
+    documents: Optional[List[WorkflowDocumentResponse]] = None
     
     class Config:
         from_attributes = True

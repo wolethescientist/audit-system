@@ -92,6 +92,9 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
     assignment_notes: '',
     expected_return_date: ''
   });
+  const [users, setUsers] = useState<Array<{id: string; full_name: string; email: string; department_id?: string}>>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (asset) {
@@ -121,6 +124,20 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
     }
   }, [asset]);
 
+  // Load users for assignment search
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const response = await api.get('/users/');
+        setUsers(response.data);
+      } catch (err) {
+        console.error('Failed to load users:', err);
+      }
+    };
+    loadUsers();
+  }, []);
+
   const loadAssetAssignments = async () => {
     if (!asset) return;
     
@@ -147,6 +164,18 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setDateError(null);
+
+    // Validate dates: procurement date must be earlier than warranty expiry
+    if (formData.procurement_date && formData.warranty_expiry) {
+      const procDate = new Date(formData.procurement_date);
+      const warrantyDate = new Date(formData.warranty_expiry);
+      if (procDate >= warrantyDate) {
+        setDateError('Procurement date must be earlier than warranty expiry date');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       // Clean up the data - convert empty strings to null for optional fields
@@ -493,7 +522,11 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
                   <Input
                     type="date"
                     value={formData.procurement_date}
-                    onChange={(e) => setFormData({ ...formData, procurement_date: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, procurement_date: e.target.value });
+                      setDateError(null);
+                    }}
+                    max={formData.warranty_expiry || undefined}
                   />
                 </div>
 
@@ -504,8 +537,15 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
                   <Input
                     type="date"
                     value={formData.warranty_expiry}
-                    onChange={(e) => setFormData({ ...formData, warranty_expiry: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, warranty_expiry: e.target.value });
+                      setDateError(null);
+                    }}
+                    min={formData.procurement_date || undefined}
                   />
+                  {dateError && (
+                    <p className="text-sm text-red-600 mt-1">{dateError}</p>
+                  )}
                 </div>
               </div>
 
@@ -692,14 +732,51 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User ID *
+                    Assign To *
                   </label>
-                  <Input
-                    value={assignmentData.user_id}
-                    onChange={(e) => setAssignmentData({ ...assignmentData, user_id: e.target.value })}
-                    placeholder="Enter user ID"
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      placeholder="Search by name..."
+                      className="mb-2"
+                    />
+                    {userSearchTerm && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {users
+                          .filter(user => 
+                            user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                            user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+                          )
+                          .slice(0, 10)
+                          .map(user => (
+                            <div
+                              key={user.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setAssignmentData({ ...assignmentData, user_id: user.id });
+                                setUserSearchTerm(user.full_name);
+                              }}
+                            >
+                              <div className="font-medium">{user.full_name}</div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          ))
+                        }
+                        {users.filter(user => 
+                          user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                          user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+                        ).length === 0 && (
+                          <div className="px-3 py-2 text-gray-500">No users found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {assignmentData.user_id && (
+                    <p className="text-sm text-green-600">
+                      Selected: {users.find(u => u.id === assignmentData.user_id)?.full_name || assignmentData.user_id}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -721,6 +798,7 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
                     type="date"
                     value={assignmentData.expected_return_date}
                     onChange={(e) => setAssignmentData({ ...assignmentData, expected_return_date: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
 
@@ -739,10 +817,13 @@ export default function AssetManagement({ asset, onClose, onSuccess }: AssetMana
               </div>
 
               <div className="flex justify-end gap-4 mt-6">
-                <Button variant="outline" onClick={() => setShowAssignModal(false)}>
+                <Button variant="outline" onClick={() => {
+                  setShowAssignModal(false);
+                  setUserSearchTerm('');
+                }}>
                   Cancel
                 </Button>
-                <Button onClick={handleAssignAsset}>
+                <Button onClick={handleAssignAsset} disabled={!assignmentData.user_id}>
                   Assign Asset
                 </Button>
               </div>

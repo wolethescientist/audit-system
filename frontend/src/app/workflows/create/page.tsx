@@ -7,12 +7,17 @@ import { Audit, Department, User, WorkflowStepCreate } from '@/lib/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+interface ExtendedWorkflowStepCreate extends WorkflowStepCreate {
+  custom_action_text?: string;
+}
+
 export default function CreateWorkflowPage() {
   const router = useRouter();
   const [audits, setAudits] = useState<Audit[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const [formData, setFormData] = useState({
     audit_id: '',
@@ -22,12 +27,13 @@ export default function CreateWorkflowPage() {
 
   const [referenceNumber, setReferenceNumber] = useState<string>('');
 
-  const [steps, setSteps] = useState<WorkflowStepCreate[]>([
+  const [steps, setSteps] = useState<ExtendedWorkflowStepCreate[]>([
     {
       step_order: 1,
       department_id: '',
       assigned_to_id: '',
       action_required: 'review_and_approve',
+      custom_action_text: '',
       due_date: '',
     },
   ]);
@@ -66,6 +72,7 @@ export default function CreateWorkflowPage() {
         department_id: '',
         assigned_to_id: '',
         action_required: 'review_and_approve',
+        custom_action_text: '',
         due_date: '',
       },
     ]);
@@ -80,10 +87,20 @@ export default function CreateWorkflowPage() {
     setSteps(newSteps);
   };
 
-  const updateStep = (index: number, field: keyof WorkflowStepCreate, value: any) => {
+  const updateStep = (index: number, field: keyof ExtendedWorkflowStepCreate, value: any) => {
     const newSteps = [...steps];
     newSteps[index] = { ...newSteps[index], [field]: value };
     setSteps(newSteps);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setUploadedFiles([...uploadedFiles, ...Array.from(e.target.files)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,9 +112,11 @@ export default function CreateWorkflowPage() {
       
       const payload = {
         ...formData,
+        audit_id: formData.audit_id || undefined, // Make audit_id optional
         steps: steps.map(step => ({
           ...step,
           assigned_to_id: step.assigned_to_id || undefined,
+          custom_action_text: step.custom_action_text || undefined,
           due_date: step.due_date || undefined,
         })),
       };
@@ -106,8 +125,24 @@ export default function CreateWorkflowPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      const workflowId = response.data.id;
+
+      // Upload documents if any
+      for (const file of uploadedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('description', `Attached document: ${file.name}`);
+        
+        await axios.post(`${API_URL}/workflows/${workflowId}/documents`, formData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          },
+        });
+      }
+
       alert(`Workflow created successfully!\nReference Number: ${response.data.reference_number}`);
-      router.push(`/workflows/${response.data.id}`);
+      router.push(`/workflows/${workflowId}`);
     } catch (error: any) {
       console.error('Error creating workflow:', error);
       alert(error.response?.data?.detail || 'Failed to create workflow');
@@ -141,20 +176,22 @@ export default function CreateWorkflowPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Audit</label>
+          <label className="block text-sm font-medium mb-2">Audit (Optional)</label>
           <select
             value={formData.audit_id}
             onChange={(e) => setFormData({ ...formData, audit_id: e.target.value })}
             className="w-full border rounded-lg px-3 py-2"
-            required
           >
-            <option value="">Select Audit</option>
+            <option value="">No audit - Standalone workflow</option>
             {audits.map((audit) => (
               <option key={audit.id} value={audit.id}>
                 {audit.title} ({audit.year})
               </option>
             ))}
           </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Leave empty to create a standalone workflow not tied to any audit
+          </p>
         </div>
 
         <div>
@@ -178,6 +215,38 @@ export default function CreateWorkflowPage() {
             rows={3}
             placeholder="Describe the workflow purpose..."
           />
+        </div>
+
+        {/* Document Upload Section */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <label className="block text-sm font-medium mb-2">Attach Documents (Optional)</label>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            className="w-full"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Upload reference documents for this workflow (PDF, Word, Excel, Images)
+          </p>
+          
+          {uploadedFiles.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between bg-gray-100 px-3 py-2 rounded">
+                  <span className="text-sm">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -255,6 +324,9 @@ export default function CreateWorkflowPage() {
                       <option value="sign">Sign Document</option>
                       <option value="review">Review Only</option>
                       <option value="acknowledge">Acknowledge</option>
+                      <option value="create_document">Create New Document</option>
+                      <option value="add_minutes">Add Minutes to Document</option>
+                      <option value="custom">Custom Action</option>
                     </select>
                   </div>
 
@@ -265,8 +337,24 @@ export default function CreateWorkflowPage() {
                       value={step.due_date || ''}
                       onChange={(e) => updateStep(index, 'due_date', e.target.value)}
                       className="w-full border rounded-lg px-3 py-2"
+                      min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
+                </div>
+
+                {/* Custom Action Text - shown when action is custom or always for additional instructions */}
+                <div className="mt-3">
+                  <label className="block text-sm font-medium mb-1">
+                    {step.action_required === 'custom' ? 'Custom Action Instructions *' : 'Additional Instructions (Optional)'}
+                  </label>
+                  <textarea
+                    value={step.custom_action_text || ''}
+                    onChange={(e) => updateStep(index, 'custom_action_text', e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2"
+                    rows={2}
+                    placeholder="Specify what the recipient should do..."
+                    required={step.action_required === 'custom'}
+                  />
                 </div>
               </div>
             ))}

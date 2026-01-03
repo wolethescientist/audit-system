@@ -47,6 +47,11 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Two-Factor Authentication (2FA) fields
+    totp_secret = Column(String(32), nullable=True)  # TOTP secret key for authenticator apps
+    totp_enabled = Column(Boolean, default=False)    # Whether 2FA is enabled for this user
+    backup_codes = Column(Text, nullable=True)       # JSON array of hashed backup codes
+    
     department = relationship("Department", back_populates="users")
 
 class Department(Base):
@@ -297,7 +302,7 @@ class Workflow(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reference_number = Column(String, unique=True, nullable=False, index=True)
-    audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"), nullable=False)
+    audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"), nullable=True)  # Now optional for standalone workflows
     name = Column(String, nullable=False)
     description = Column(Text)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
@@ -306,9 +311,14 @@ class Workflow(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
     
+    # Sender information for standalone workflows
+    sender_name = Column(String(255), nullable=True)
+    sender_department = Column(String(255), nullable=True)
+    
     audit = relationship("Audit")
     created_by = relationship("User")
     steps = relationship("WorkflowStep", back_populates="workflow", order_by="WorkflowStep.step_order")
+    documents = relationship("WorkflowDocument", back_populates="workflow")
 
 class WorkflowStep(Base):
     __tablename__ = "workflow_steps"
@@ -319,6 +329,7 @@ class WorkflowStep(Base):
     department_id = Column(UUID(as_uuid=True), ForeignKey("departments.id"), nullable=False)
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     action_required = Column(String, default="review_and_approve")
+    custom_action_text = Column(String(500), nullable=True)  # Custom action instructions
     status = Column(Enum(WorkflowStatus), default=WorkflowStatus.PENDING)
     due_date = Column(DateTime)
     started_at = Column(DateTime)
@@ -397,6 +408,23 @@ class WorkflowApproval(Base):
     
     workflow_step = relationship("WorkflowStep", back_populates="approvals")
     user = relationship("User")
+
+class WorkflowDocument(Base):
+    """Documents attached to workflows for reference"""
+    __tablename__ = "workflow_documents"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflows.id"), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    file_url = Column(String(1000), nullable=False)
+    file_size = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    description = Column(Text, nullable=True)
+    uploaded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    workflow = relationship("Workflow", back_populates="documents")
+    uploaded_by = relationship("User")
 
 # ISO 19011 Audit Programme Models (Clause 5)
 
@@ -715,8 +743,9 @@ class RiskAssessment(Base):
     __tablename__ = "risk_assessments"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"))
-    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.id"))
+    # Note: audit_id is deprecated and kept for backward compatibility only
+    audit_id = Column(UUID(as_uuid=True), ForeignKey("audits.id"), nullable=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.id"), nullable=False)  # Required field
     risk_title = Column(String, nullable=False)
     description = Column(Text)
     likelihood_score = Column(Integer, nullable=False)  # 1-5 scale per ISO 31000
@@ -736,7 +765,7 @@ class RiskAssessment(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    audit = relationship("Audit")
+    audit = relationship("Audit")  # Deprecated - kept for backward compatibility
     asset = relationship("Asset")
     risk_owner = relationship("User", foreign_keys=[risk_owner_id])
     created_by = relationship("User", foreign_keys=[created_by_id])

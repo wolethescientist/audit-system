@@ -168,7 +168,7 @@ export default function EvidencePage() {
         {/* Upload Section */}
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Upload Evidence</h2>
-          <p className="text-gray-600 mb-4">Upload audit evidence documents to Supabase Storage</p>
+          <p className="text-gray-600 mb-4">Upload audit evidence documents</p>
           
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -275,7 +275,7 @@ export default function EvidencePage() {
                 disabled={selectedFiles.every(f => f.uploaded) || selectedFiles.some(f => f.uploading)}
                 className="btn-primary w-full"
               >
-                {selectedFiles.some(f => f.uploading) ? 'Uploading...' : 'Upload to Supabase'}
+                {selectedFiles.some(f => f.uploading) ? 'Uploading...' : 'Upload'}
               </button>
             </div>
           )}

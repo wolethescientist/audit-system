@@ -16,3 +16,5 @@ pandas
 psutil
 asyncio
 markdown
+pyotp
+qrcode[pil]

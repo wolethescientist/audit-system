@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func, desc
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime, timedelta
 import random
 import string
@@ -12,11 +12,11 @@ from app.database import get_db
 from app.auth import get_current_user, require_roles
 from app.models import (
     User, UserRole, Workflow, WorkflowStep, WorkflowApproval, 
-    WorkflowStatus, ApprovalAction, Audit
+    WorkflowStatus, ApprovalAction, Audit, WorkflowDocument
 )
 from app.schemas import (
     WorkflowCreate, WorkflowResponse, WorkflowDetailResponse,
-    WorkflowStepResponse, ApprovalCreate, ApprovalResponse
+    WorkflowStepResponse, ApprovalCreate, ApprovalResponse, WorkflowDocumentResponse
 )
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
@@ -33,19 +33,20 @@ def create_workflow(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new workflow with multiple department steps"""
+    """Create a new workflow with multiple department steps (audit is optional for standalone workflows)"""
     
-    # Verify audit exists
-    audit = db.query(Audit).filter(Audit.id == workflow_data.audit_id).first()
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
+    # Verify audit exists if provided
+    if workflow_data.audit_id:
+        audit = db.query(Audit).filter(Audit.id == workflow_data.audit_id).first()
+        if not audit:
+            raise HTTPException(status_code=404, detail="Audit not found")
     
     # Generate unique reference number
     reference_number = generate_reference_number()
     while db.query(Workflow).filter(Workflow.reference_number == reference_number).first():
         reference_number = generate_reference_number()
     
-    # Create workflow
+    # Create workflow with sender information
     workflow = Workflow(
         reference_number=reference_number,
         audit_id=workflow_data.audit_id,
@@ -53,7 +54,9 @@ def create_workflow(
         description=workflow_data.description,
         created_by_id=current_user.id,
         status=WorkflowStatus.PENDING,
-        current_step=0
+        current_step=0,
+        sender_name=current_user.full_name,
+        sender_department=current_user.department.name if current_user.department else None
     )
     db.add(workflow)
     db.flush()
@@ -66,6 +69,7 @@ def create_workflow(
             department_id=step_data.department_id,
             assigned_to_id=step_data.assigned_to_id,
             action_required=step_data.action_required,
+            custom_action_text=step_data.custom_action_text,
             due_date=step_data.due_date,
             status=WorkflowStatus.PENDING
         )
@@ -75,6 +79,93 @@ def create_workflow(
     db.refresh(workflow)
     
     return workflow
+
+@router.post("/{workflow_id}/documents", response_model=WorkflowDocumentResponse)
+async def upload_workflow_document(
+    workflow_id: UUID,
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a document to a workflow"""
+    from app.services.supabase_storage_service import supabase_storage
+    
+    # Verify workflow exists
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    # Read file content
+    content = await file.read()
+    file_size = len(content)
+    
+    # Upload to Supabase storage
+    file_path = f"workflows/{workflow_id}/{uuid4()}_{file.filename}"
+    file_url = supabase_storage.upload_file(content, file_path, file.content_type)
+    
+    if not file_url:
+        raise HTTPException(status_code=500, detail="Failed to upload file")
+    
+    # Create document record
+    document = WorkflowDocument(
+        id=uuid4(),
+        workflow_id=workflow_id,
+        file_name=file.filename,
+        file_url=file_url,
+        file_size=file_size,
+        mime_type=file.content_type,
+        description=description,
+        uploaded_by_id=current_user.id
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    
+    return document
+
+@router.get("/{workflow_id}/documents", response_model=List[WorkflowDocumentResponse])
+def get_workflow_documents(
+    workflow_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all documents attached to a workflow"""
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    documents = db.query(WorkflowDocument).filter(
+        WorkflowDocument.workflow_id == workflow_id
+    ).order_by(WorkflowDocument.created_at.desc()).all()
+    
+    return documents
+
+@router.delete("/{workflow_id}/documents/{document_id}")
+def delete_workflow_document(
+    workflow_id: UUID,
+    document_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a document from a workflow"""
+    document = db.query(WorkflowDocument).filter(
+        WorkflowDocument.id == document_id,
+        WorkflowDocument.workflow_id == workflow_id
+    ).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Only allow deletion by uploader or workflow creator
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    if document.uploaded_by_id != current_user.id and workflow.created_by_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this document")
+    
+    db.delete(document)
+    db.commit()
+    
+    return {"message": "Document deleted successfully"}
 
 @router.get("/", response_model=List[WorkflowResponse])
 def list_workflows(

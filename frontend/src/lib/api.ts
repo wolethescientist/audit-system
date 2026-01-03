@@ -326,3 +326,45 @@ export const rbacApi = {
     return response.data;
   },
 };
+
+// Two-Factor Authentication API Functions
+export const twoFactorApi = {
+  // Setup 2FA - generates secret and QR code
+  setup: async () => {
+    const response = await api.post('/auth/2fa/setup');
+    return response.data;
+  },
+
+  // Verify and enable 2FA
+  verifyAndEnable: async (code: string) => {
+    const response = await api.post('/auth/2fa/verify', { code });
+    return response.data;
+  },
+
+  // Disable 2FA
+  disable: async (code: string) => {
+    const response = await api.post('/auth/2fa/disable', { code });
+    return response.data;
+  },
+
+  // Get 2FA status
+  getStatus: async () => {
+    const response = await api.get('/auth/2fa/status');
+    return response.data;
+  },
+
+  // Regenerate backup codes
+  regenerateBackupCodes: async (code: string) => {
+    const response = await api.post('/auth/2fa/regenerate-backup-codes', { code });
+    return response.data;
+  },
+
+  // Verify 2FA during login (uses temp token)
+  verifyLogin: async (code: string, tempToken: string) => {
+    const response = await api.post('/auth/login/2fa', { 
+      code, 
+      temp_token: tempToken 
+    });
+    return response.data;
+  },
+};

@@ -12,7 +12,6 @@ const RisksPage: React.FC = () => {
   const [risks, setRisks] = useState<RiskAssessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<RiskAssessment | null>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'matrix' | 'create' | 'details'>('list');
   const [creating, setCreating] = useState(false);
@@ -41,7 +40,6 @@ const RisksPage: React.FC = () => {
       const newRisk = response.data;
       
       setRisks(prev => [newRisk, ...prev]);
-      setShowCreateForm(false);
       setActiveTab('list');
       
       // Optionally select the newly created risk
@@ -323,7 +321,6 @@ const RisksPage: React.FC = () => {
           {/* Risk Linking */}
           <RiskLinking
             riskId={selectedRisk.id}
-            auditId={selectedRisk.audit_id}
             onLinkingComplete={(linkedEntities) => {
               // Optionally show success message or refresh data
               console.log('Linked entities:', linkedEntities);

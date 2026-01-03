@@ -252,8 +252,7 @@ export enum RiskCategory {
 
 export interface RiskAssessment {
   id: string;
-  audit_id?: string;
-  asset_id?: string;
+  asset_id: string; // Required - risk must be linked to an asset
   risk_title: string;
   description?: string;
   likelihood_score: number;
@@ -274,8 +273,7 @@ export interface RiskAssessment {
 }
 
 export interface RiskAssessmentCreate {
-  audit_id?: string;
-  asset_id?: string;
+  asset_id: string; // Required - risk must be linked to an asset
   risk_title: string;
   description?: string;
   likelihood_score: number;

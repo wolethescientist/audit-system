@@ -165,6 +165,14 @@ async def create_asset(
                     detail="Asset custodian not found"
                 )
         
+        # Validate procurement date is earlier than warranty expiry
+        if asset_data.procurement_date and asset_data.warranty_expiry:
+            if asset_data.procurement_date >= asset_data.warranty_expiry:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Procurement date must be earlier than warranty expiry date"
+                )
+        
         # Create asset
         asset = Asset(
             **asset_data.dict()
@@ -288,6 +296,16 @@ async def update_asset(
         
         # Update fields
         update_data = asset_data.dict(exclude_unset=True)
+        
+        # Validate procurement date is earlier than warranty expiry
+        procurement_date = update_data.get('procurement_date', asset.procurement_date)
+        warranty_expiry = update_data.get('warranty_expiry', asset.warranty_expiry)
+        if procurement_date and warranty_expiry:
+            if procurement_date >= warranty_expiry:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Procurement date must be earlier than warranty expiry date"
+                )
         
         for field, value in update_data.items():
             setattr(asset, field, value)

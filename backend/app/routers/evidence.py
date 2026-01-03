@@ -25,13 +25,17 @@ async def upload_evidence_file(
     evidence_category: Optional[str] = Form(None),
     linked_checklist_id: Optional[str] = Form(None),
     linked_finding_id: Optional[str] = Form(None),
+    replace_existing: Optional[bool] = Form(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Upload evidence file to Supabase Storage
     ISO 19011 Clause 6.4.5 - Evidence collection with integrity checking
+    Includes duplicate detection based on file hash
     """
+    import hashlib
+    
     # Verify audit exists
     audit = db.query(Audit).filter(Audit.id == audit_id).first()
     if not audit:
@@ -42,6 +46,34 @@ async def upload_evidence_file(
     file_content = await file.read()
     if len(file_content) > max_size:
         raise HTTPException(status_code=400, detail="File size exceeds 50MB limit")
+    
+    # Calculate file hash for duplicate detection
+    file_hash = hashlib.sha256(file_content).hexdigest()
+    
+    # Check for duplicate files in this audit
+    existing_evidence = db.query(AuditEvidence).filter(
+        AuditEvidence.audit_id == audit_id,
+        AuditEvidence.file_hash == file_hash
+    ).first()
+    
+    if existing_evidence and not replace_existing:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "Duplicate file detected",
+                "existing_id": str(existing_evidence.id),
+                "existing_file_name": existing_evidence.file_name,
+                "uploaded_at": existing_evidence.created_at.isoformat() if existing_evidence.created_at else None
+            }
+        )
+    
+    # If replacing, delete the existing evidence
+    if existing_evidence and replace_existing:
+        # Delete from Supabase Storage
+        file_path = existing_evidence.file_url.split(f"/{supabase_storage.bucket_name}/")[-1]
+        supabase_storage.delete_file(file_path)
+        db.delete(existing_evidence)
+        db.flush()
     
     # Validate file type
     allowed_types = [
@@ -86,7 +118,7 @@ async def upload_evidence_file(
         uploaded_by_id=current_user.id,
         description=description,
         evidence_type=evidence_type,
-        file_hash=upload_result["file_hash"],
+        file_hash=file_hash,  # Use our calculated hash
         file_size=upload_result["file_size"],
         mime_type=upload_result["mime_type"],
         linked_checklist_id=UUID(linked_checklist_id) if linked_checklist_id else None,

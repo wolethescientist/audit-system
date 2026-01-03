@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from app.database import get_db
 from app.auth import get_current_user
 from app.models import (
-    User, RiskAssessment, RiskControl, Asset, Audit, CAPAItem, AuditFinding,
+    User, RiskAssessment, RiskControl, Asset, CAPAItem, AuditFinding,
     RiskCategory, UserRole
 )
 from app.schemas import (
@@ -153,8 +153,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 class RiskAssessmentCreate(BaseModel):
-    audit_id: Optional[UUID] = None
-    asset_id: Optional[UUID] = None
+    asset_id: UUID = Field(..., description="Required - risk must be linked to an asset")
     risk_title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     likelihood_score: int = Field(..., ge=1, le=5)
@@ -182,8 +181,7 @@ class RiskAssessmentUpdate(BaseModel):
 
 class RiskAssessmentResponse(BaseModel):
     id: UUID
-    audit_id: Optional[UUID]
-    asset_id: Optional[UUID]
+    asset_id: UUID
     risk_title: str
     description: Optional[str]
     likelihood_score: int
@@ -263,23 +261,22 @@ async def create_risk_assessment(
     - ISO 27005 Clause 8.2: Information security risk assessment
     """
     try:
-        # Validate audit exists if provided
-        if risk_data.audit_id:
-            audit = db.query(Audit).filter(Audit.id == risk_data.audit_id).first()
-            if not audit:
+        # Validate next_review_date is in the future if provided
+        if risk_data.next_review_date:
+            today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            if risk_data.next_review_date <= today:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Audit not found"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Next review date must be in the future"
                 )
         
-        # Validate asset exists if provided
-        if risk_data.asset_id:
-            asset = db.query(Asset).filter(Asset.id == risk_data.asset_id).first()
-            if not asset:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Asset not found"
-                )
+        # Validate asset exists (asset_id is required by schema)
+        asset = db.query(Asset).filter(Asset.id == risk_data.asset_id).first()
+        if not asset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Asset not found"
+            )
         
         # Calculate risk rating (ISO 31000 compliant)
         risk_rating = risk_data.likelihood_score * risk_data.impact_score
@@ -287,7 +284,6 @@ async def create_risk_assessment(
         
         # Create risk assessment
         risk_assessment = RiskAssessment(
-            audit_id=risk_data.audit_id,
             asset_id=risk_data.asset_id,
             risk_title=risk_data.risk_title,
             description=risk_data.description,
@@ -319,7 +315,7 @@ async def create_risk_assessment(
 
 @router.get("/matrix", response_model=List[RiskMatrixData])
 async def get_risk_matrix(
-    audit_id: Optional[UUID] = None,
+    asset_id: Optional[UUID] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -332,21 +328,18 @@ async def get_risk_matrix(
         # Build query
         query = db.query(RiskAssessment)
         
-        # Filter by audit if provided
-        if audit_id:
-            query = query.filter(RiskAssessment.audit_id == audit_id)
+        # Filter by asset if provided
+        if asset_id:
+            query = query.filter(RiskAssessment.asset_id == asset_id)
         
-        # Apply user access controls
+        # Apply user access controls - all users can see risks they created or own
         if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
-            # Regular users can only see risks from their audits
-            user_audits = db.query(Audit.id).filter(
+            query = query.filter(
                 or_(
-                    Audit.assigned_manager_id == current_user.id,
-                    Audit.lead_auditor_id == current_user.id,
-                    Audit.created_by_id == current_user.id
+                    RiskAssessment.created_by_id == current_user.id,
+                    RiskAssessment.risk_owner_id == current_user.id
                 )
-            ).subquery()
-            query = query.filter(RiskAssessment.audit_id.in_(user_audits))
+            )
         
         risks = query.all()
         
@@ -593,7 +586,6 @@ async def link_risk_to_entities(
 
 @router.get("/", response_model=List[RiskAssessmentResponse])
 async def list_risk_assessments(
-    audit_id: Optional[UUID] = None,
     asset_id: Optional[UUID] = None,
     risk_category: Optional[str] = None,
     status: Optional[str] = None,
@@ -609,8 +601,6 @@ async def list_risk_assessments(
         query = db.query(RiskAssessment)
         
         # Apply filters
-        if audit_id:
-            query = query.filter(RiskAssessment.audit_id == audit_id)
         if asset_id:
             query = query.filter(RiskAssessment.asset_id == asset_id)
         if risk_category:
@@ -618,16 +608,14 @@ async def list_risk_assessments(
         if status:
             query = query.filter(RiskAssessment.status == status)
         
-        # Apply user access controls
+        # Apply user access controls - users can see risks they created or own
         if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
-            user_audits = db.query(Audit.id).filter(
+            query = query.filter(
                 or_(
-                    Audit.assigned_manager_id == current_user.id,
-                    Audit.lead_auditor_id == current_user.id,
-                    Audit.created_by_id == current_user.id
+                    RiskAssessment.created_by_id == current_user.id,
+                    RiskAssessment.risk_owner_id == current_user.id
                 )
-            ).subquery()
-            query = query.filter(RiskAssessment.audit_id.in_(user_audits))
+            )
         
         risks = query.offset(skip).limit(limit).all()
         return risks

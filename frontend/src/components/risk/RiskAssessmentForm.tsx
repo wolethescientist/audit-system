@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RiskAssessmentCreate, ISO31000Scale, User, Asset, Audit } from '@/lib/types';
+import { RiskAssessmentCreate, ISO31000Scale, User, Asset } from '@/lib/types';
 import { api } from '@/lib/api';
 
 interface RiskAssessmentFormProps {
-  auditId?: string;
   assetId?: string;
   onSubmit: (data: RiskAssessmentCreate) => void;
   onCancel: () => void;
@@ -13,15 +12,13 @@ interface RiskAssessmentFormProps {
 }
 
 const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
-  auditId,
   assetId,
   onSubmit,
   onCancel,
   isLoading = false
 }) => {
   const [formData, setFormData] = useState<RiskAssessmentCreate>({
-    audit_id: auditId,
-    asset_id: assetId,
+    asset_id: assetId || '',
     risk_title: '',
     description: '',
     likelihood_score: 1,
@@ -41,13 +38,12 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
   
   const [users, setUsers] = useState<User[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [audits, setAudits] = useState<Audit[]>([]);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchScales();
     fetchUsers();
     fetchAssets();
-    fetchAudits();
   }, []);
 
   const fetchScales = async () => {
@@ -77,15 +73,6 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
     }
   };
 
-  const fetchAudits = async () => {
-    try {
-      const response = await api.get('/audits');
-      setAudits(response.data);
-    } catch (error) {
-      console.error('Failed to fetch audits:', error);
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -96,6 +83,25 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setDateError(null);
+    
+    // Validate asset is selected
+    if (!formData.asset_id) {
+      return; // HTML5 required will handle this
+    }
+    
+    // Validate next review date is in the future
+    if (formData.next_review_date) {
+      const reviewDate = new Date(formData.next_review_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (reviewDate <= today) {
+        setDateError('Next review date must be in the future');
+        return;
+      }
+    }
+    
     onSubmit(formData);
   };
 
@@ -124,40 +130,41 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
         {/* Basic Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="audit_id" className="block text-sm font-medium text-gray-700 mb-2">
-              Related Audit
-            </label>
-            <select
-              id="audit_id"
-              name="audit_id"
-              value={formData.audit_id || ''}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select an audit (optional)</option>
-              {audits.map(audit => (
-                <option key={audit.id} value={audit.id}>
-                  {audit.title} ({audit.year})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label htmlFor="asset_id" className="block text-sm font-medium text-gray-700 mb-2">
-              Related Asset
+              Related Asset *
             </label>
             <select
               id="asset_id"
               name="asset_id"
               value={formData.asset_id || ''}
               onChange={handleInputChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select an asset (optional)</option>
+              <option value="">Select an asset *</option>
               {assets.map(asset => (
                 <option key={asset.id} value={asset.id}>
                   {asset.asset_name} ({asset.asset_category})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="risk_owner_id" className="block text-sm font-medium text-gray-700 mb-2">
+              Risk Owner
+            </label>
+            <select
+              id="risk_owner_id"
+              name="risk_owner_id"
+              value={formData.risk_owner_id}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select risk owner</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name} ({user.role})
                 </option>
               ))}
             </select>
@@ -241,13 +248,13 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {scales && Object.entries(scales.impact_scale).map(([score, scale]) => (
-                  <option key={score} value={score}>
-                    {score} - {scale.name} ({scale.financial})
-                  </option>
-                ))}
+                <option value={1}>1 - Negligible</option>
+                <option value={2}>2 - Minor</option>
+                <option value={3}>3 - Moderate</option>
+                <option value={4}>4 - Major</option>
+                <option value={5}>5 - Critical</option>
               </select>
-              {scales && (
+              {scales && scales.impact_scale[formData.impact_score] && (
                 <p className="text-sm text-gray-600 mt-1">
                   {scales.impact_scale[formData.impact_score]?.description}
                 </p>
@@ -290,23 +297,18 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="risk_owner_id" className="block text-sm font-medium text-gray-700 mb-2">
-              Risk Owner
+            <label htmlFor="next_review_date" className="block text-sm font-medium text-gray-700 mb-2">
+              Next Review Date
             </label>
-            <select
-              id="risk_owner_id"
-              name="risk_owner_id"
-              value={formData.risk_owner_id}
+            <input
+              type="date"
+              id="next_review_date"
+              name="next_review_date"
+              value={formData.next_review_date}
               onChange={handleInputChange}
+              min={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select risk owner</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.full_name} ({user.role})
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 
@@ -358,20 +360,9 @@ const RiskAssessmentForm: React.FC<RiskAssessmentFormProps> = ({
           />
         </div>
 
-        {/* Next Review Date */}
-        <div>
-          <label htmlFor="next_review_date" className="block text-sm font-medium text-gray-700 mb-2">
-            Next Review Date
-          </label>
-          <input
-            type="date"
-            id="next_review_date"
-            name="next_review_date"
-            value={formData.next_review_date}
-            onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        {dateError && (
+          <div className="text-red-600 text-sm">{dateError}</div>
+        )}
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4 pt-6 border-t">

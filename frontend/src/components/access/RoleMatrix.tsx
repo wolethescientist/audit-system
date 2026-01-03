@@ -57,6 +57,7 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleMatrix | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const [formData, setFormData] = useState({
     role_name: '',
@@ -465,7 +466,11 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setSelectedRole(role)}
+                          onClick={() => {
+                            setSelectedRole(role);
+                            setShowViewModal(true);
+                          }}
+                          title="View role details"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -473,9 +478,40 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
+                            // Pre-fill form data with selected role values
+                            setFormData({
+                              role_name: role.role_name,
+                              role_description: role.role_description || '',
+                              role_category: role.role_category || 'business',
+                              is_global_role: role.is_global_role,
+                              can_create_audits: role.can_create_audits,
+                              can_view_all_audits: role.can_view_all_audits,
+                              can_view_assigned_audits: role.can_view_assigned_audits,
+                              can_edit_audits: role.can_edit_audits,
+                              can_delete_audits: role.can_delete_audits,
+                              can_approve_reports: role.can_approve_reports,
+                              can_manage_users: role.can_manage_users,
+                              can_manage_departments: role.can_manage_departments,
+                              can_view_analytics: role.can_view_analytics,
+                              can_export_data: role.can_export_data,
+                              can_create_risks: role.can_create_risks,
+                              can_assess_risks: role.can_assess_risks,
+                              can_approve_risk_treatments: role.can_approve_risk_treatments,
+                              can_create_capa: role.can_create_capa,
+                              can_assign_capa: role.can_assign_capa,
+                              can_close_capa: role.can_close_capa,
+                              can_upload_documents: role.can_upload_documents,
+                              can_approve_documents: role.can_approve_documents,
+                              can_archive_documents: role.can_archive_documents,
+                              can_manage_assets: role.can_manage_assets,
+                              can_assign_assets: role.can_assign_assets,
+                              can_manage_vendors: role.can_manage_vendors,
+                              can_evaluate_vendors: role.can_evaluate_vendors
+                            });
                             setSelectedRole(role);
                             setShowEditModal(true);
                           }}
+                          title="Edit role"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -484,6 +520,7 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
                           size="sm"
                           onClick={() => handleDeleteRole(role.id)}
                           className="text-red-600 hover:text-red-800"
+                          title="Delete role"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -783,6 +820,248 @@ export default function RoleMatrix({ onClose }: RoleMatrixProps) {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Role Modal */}
+      {showViewModal && selectedRole && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedRole.role_name}</h2>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={getCategoryBadgeColor(selectedRole.role_category)}>
+                    {selectedRole.role_category}
+                  </Badge>
+                  <Badge variant={selectedRole.is_global_role ? "default" : "outline"}>
+                    {selectedRole.is_global_role ? 'Global' : 'Department'}
+                  </Badge>
+                  <Badge className={selectedRole.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                    {selectedRole.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedRole(null);
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {selectedRole.role_description && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-500 mb-1">Description</h3>
+                  <p className="text-gray-900">{selectedRole.role_description}</p>
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Permissions ({countPermissions(selectedRole)} enabled)</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Audit Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">Audit Management</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_create_audits', label: 'Create Audits' },
+                        { key: 'can_view_all_audits', label: 'View All Audits' },
+                        { key: 'can_view_assigned_audits', label: 'View Assigned Audits' },
+                        { key: 'can_edit_audits', label: 'Edit Audits' },
+                        { key: 'can_delete_audits', label: 'Delete Audits' },
+                        { key: 'can_approve_reports', label: 'Approve Reports' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* System Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">System Management</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_manage_users', label: 'Manage Users' },
+                        { key: 'can_manage_departments', label: 'Manage Departments' },
+                        { key: 'can_view_analytics', label: 'View Analytics' },
+                        { key: 'can_export_data', label: 'Export Data' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Risk & CAPA Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">Risk & CAPA</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_create_risks', label: 'Create Risks' },
+                        { key: 'can_assess_risks', label: 'Assess Risks' },
+                        { key: 'can_approve_risk_treatments', label: 'Approve Risk Treatments' },
+                        { key: 'can_create_capa', label: 'Create CAPA' },
+                        { key: 'can_assign_capa', label: 'Assign CAPA' },
+                        { key: 'can_close_capa', label: 'Close CAPA' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Document Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">Document Control</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_upload_documents', label: 'Upload Documents' },
+                        { key: 'can_approve_documents', label: 'Approve Documents' },
+                        { key: 'can_archive_documents', label: 'Archive Documents' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Asset Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">Asset Management</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_manage_assets', label: 'Manage Assets' },
+                        { key: 'can_assign_assets', label: 'Assign Assets' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Vendor Permissions */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-800 mb-3">Vendor Management</h4>
+                    <div className="space-y-2">
+                      {[
+                        { key: 'can_manage_vendors', label: 'Manage Vendors' },
+                        { key: 'can_evaluate_vendors', label: 'Evaluate Vendors' }
+                      ].map(permission => (
+                        <div key={permission.key} className="flex items-center gap-2">
+                          {selectedRole[permission.key as keyof RoleMatrix] ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-300">✗</span>
+                          )}
+                          <span className={`text-sm ${selectedRole[permission.key as keyof RoleMatrix] ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {permission.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-6 mt-6 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedRole(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowViewModal(false);
+                    // Pre-fill form data with selected role values
+                    setFormData({
+                      role_name: selectedRole.role_name,
+                      role_description: selectedRole.role_description || '',
+                      role_category: selectedRole.role_category || 'business',
+                      is_global_role: selectedRole.is_global_role,
+                      can_create_audits: selectedRole.can_create_audits,
+                      can_view_all_audits: selectedRole.can_view_all_audits,
+                      can_view_assigned_audits: selectedRole.can_view_assigned_audits,
+                      can_edit_audits: selectedRole.can_edit_audits,
+                      can_delete_audits: selectedRole.can_delete_audits,
+                      can_approve_reports: selectedRole.can_approve_reports,
+                      can_manage_users: selectedRole.can_manage_users,
+                      can_manage_departments: selectedRole.can_manage_departments,
+                      can_view_analytics: selectedRole.can_view_analytics,
+                      can_export_data: selectedRole.can_export_data,
+                      can_create_risks: selectedRole.can_create_risks,
+                      can_assess_risks: selectedRole.can_assess_risks,
+                      can_approve_risk_treatments: selectedRole.can_approve_risk_treatments,
+                      can_create_capa: selectedRole.can_create_capa,
+                      can_assign_capa: selectedRole.can_assign_capa,
+                      can_close_capa: selectedRole.can_close_capa,
+                      can_upload_documents: selectedRole.can_upload_documents,
+                      can_approve_documents: selectedRole.can_approve_documents,
+                      can_archive_documents: selectedRole.can_archive_documents,
+                      can_manage_assets: selectedRole.can_manage_assets,
+                      can_assign_assets: selectedRole.can_assign_assets,
+                      can_manage_vendors: selectedRole.can_manage_vendors,
+                      can_evaluate_vendors: selectedRole.can_evaluate_vendors
+                    });
+                    setShowEditModal(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Role
+                </Button>
+              </div>
             </div>
           </div>
         </div>

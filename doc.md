@@ -294,17 +294,269 @@ The system has 6 user roles with different access levels:
 ---
 
 ### 15. Access Control
-**What it does:** Fine-grained permission management.
+**What it does:** Fine-grained permission management with enhanced Role-Based Access Control (RBAC).
 
-**Features:**
-- Role matrix configuration
-- Audit visibility settings
-- Team assignments
-- User permissions
-
-**ISO Reference:** ISO 27001 Annex A.9 - Access control
+The Access Control module has 4 sub-features (tabs):
 
 **Access:** System Admin, Audit Manager only
+
+**ISO References:**
+- ISO 27001 A.9.2.2 - User access provisioning
+- ISO 27001 A.6.1.2 - Segregation of duties
+- ISO 27001 A.12.4.1 - Event logging
+
+---
+
+#### Sub-Feature 1: Team Assignment
+
+**What it does:** Assign auditors to audit teams with proper roles per ISO 19011 requirements.
+
+**How to use:**
+1. Enter or select an Audit ID
+2. Select a Lead Auditor from available users
+3. Add team members and assign their role in the audit
+4. Click "Assign Team"
+
+**Audit Team Roles:**
+| Role | Description |
+|------|-------------|
+| Lead Auditor | Heads the audit team, responsible for overall audit |
+| Senior Auditor | Experienced auditor, can mentor others |
+| Auditor | Conducts audit procedures and collects evidence |
+| Technical Specialist | Provides expertise in specific technical areas |
+| Observer | Watches the audit process (for training/oversight) |
+| Trainee Auditor | Learning auditor under supervision |
+
+**Team Statistics shown:**
+- Total team size
+- Number of auditors by role type
+- Competency verification status
+
+**ISO 19011 Compliance:**
+- Team competency must be verified before audit execution
+- Lead auditor must have appropriate qualifications
+- Team composition should match audit scope and complexity
+
+---
+
+#### Sub-Feature 2: User Management
+
+**What it does:** Manage users and assign additional roles from the role matrix.
+
+**How to use:**
+1. Search or filter users by name, role, or department
+2. Click on a user to select them
+3. View their current details and role assignments
+4. Assign additional roles if needed
+
+**User Details shown:**
+- Name and email
+- Primary role (system role)
+- Department
+- Active/Inactive status
+
+**Assigning Additional Roles:**
+1. Select a role from the Role Matrix dropdown
+2. Enter a reason for the assignment
+3. Check "Temporary Assignment" if time-limited
+4. Set expiry date for temporary roles
+5. Click "Assign Role"
+
+**Role Assignment Features:**
+- Multiple roles can be assigned to one user
+- Temporary assignments auto-expire
+- Assignment reasons are logged for audit trail
+- View all current and historical assignments
+
+**Why use additional roles?**
+- Give a user extra permissions for a specific project
+- Temporary access during staff absence
+- Cross-department collaboration needs
+
+---
+
+#### Sub-Feature 3: Audit Visibility
+
+**What it does:** Controls which audits users can see based on their role and department.
+
+**Your Audit Access section shows:**
+- Number of audits you can access
+- Your access level (Full, Department, Assigned Only, None)
+- List of accessible audits with status and access reason
+
+**Access Levels Explained:**
+| Level | Who Gets It | What They See |
+|-------|-------------|---------------|
+| Full Access | System Administrators | All audits in the system |
+| Department + Assigned | Audit Managers | Audits in their department + audits assigned to them |
+| Assigned Only | Auditors | Only audits they are assigned to |
+| Department Audits | Department Staff | Audits related to their department |
+
+**Admin Features (System Admin only):**
+
+**Check User Access:**
+1. Select any user from the dropdown
+2. See their access level and accessible audit count
+3. Useful for troubleshooting access issues
+
+**Admin Override:**
+Use this for emergency access situations:
+1. Enter the Audit ID
+2. Select the user who needs access
+3. Enter a reason (required for audit trail)
+4. Click "Apply Admin Override"
+
+⚠️ **Warning:** Admin overrides are logged and audited. Use only for legitimate emergency access.
+
+**Department Access Summary:**
+Shows how each role type accesses audits:
+- System Administrators → Full System Access
+- Audit Managers → Department + Assigned
+- Auditors → Assigned Audits Only
+- Department Staff → Department Audits
+
+---
+
+#### Sub-Feature 4: Role Matrix
+
+**What it does:** Define custom roles with specific permissions for fine-grained access control.
+
+**Overview Cards show:**
+- Total Roles in the system
+- System Roles (high privilege)
+- Global Roles (cross-department)
+- Audit Roles (audit-specific)
+
+**Role Categories:**
+| Category | Purpose | Example |
+|----------|---------|---------|
+| System | High-level system administration | System Administrator |
+| Audit | Audit-related activities | Lead Auditor, Auditor |
+| Business | Business operations | Department Manager |
+| Compliance | Compliance activities | Compliance Officer |
+
+**Role Scope:**
+- **Global Role** - Applies across all departments
+- **Department Role** - Limited to specific department
+
+**Creating a New Role:**
+1. Click "Create Role"
+2. Enter role name and description
+3. Select category (System, Audit, Business, Compliance)
+4. Check "Global Role" if it applies across departments
+5. Select permissions (see below)
+6. Click save
+
+**Available Permissions:**
+
+**Audit Management:**
+- Create Audits
+- View All Audits
+- View Assigned Audits
+- Edit Audits
+- Delete Audits
+- Approve Reports
+
+**System Management:**
+- Manage Users
+- Manage Departments
+- View Analytics
+- Export Data
+
+**Risk & CAPA:**
+- Create Risks
+- Assess Risks
+- Approve Risk Treatments
+- Create CAPA
+- Assign CAPA
+- Close CAPA
+
+**Document Control:**
+- Upload Documents
+- Approve Documents
+- Archive Documents
+
+**Asset & Vendor:**
+- Manage Assets
+- Assign Assets
+- Manage Vendors
+- Evaluate Vendors
+
+**Managing Existing Roles:**
+- View role details (click eye icon)
+- Edit role permissions (click edit icon)
+- Delete role (click trash icon) - use with caution
+
+**Role Table shows:**
+- Role name and description
+- Category badge
+- Scope (Global/Department)
+- Number of permissions
+- Active/Inactive status
+
+---
+
+#### How Access Control Relates to Other Features
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ACCESS CONTROL                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
+│  │    ROLE     │    │    USER     │    │   AUDIT     │     │
+│  │   MATRIX    │───►│ MANAGEMENT  │───►│ VISIBILITY  │     │
+│  │ (Define     │    │ (Assign     │    │ (Control    │     │
+│  │  permissions)│    │  roles)     │    │  what's seen)│    │
+│  └─────────────┘    └─────────────┘    └─────────────┘     │
+│         │                  │                  │             │
+│         └──────────────────┼──────────────────┘             │
+│                            │                                │
+│                            ▼                                │
+│                   ┌─────────────┐                           │
+│                   │    TEAM     │                           │
+│                   │ ASSIGNMENT  │                           │
+│                   │ (Assign to  │                           │
+│                   │  audits)    │                           │
+│                   └─────────────┘                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+              ┌─────────────────────────┐
+              │   AFFECTS ALL FEATURES  │
+              ├─────────────────────────┤
+              │ • Audits (who can see)  │
+              │ • Reports (who approves)│
+              │ • CAPA (who assigns)    │
+              │ • Documents (who views) │
+              │ • Analytics (who sees)  │
+              └─────────────────────────┘
+```
+
+**Connection to other features:**
+
+| Feature | How Access Control Affects It |
+|---------|-------------------------------|
+| Audits | Determines who can create, view, edit audits |
+| Team Assignment | Controls who can be assigned to audit teams |
+| Workflows | Determines who can approve workflow steps |
+| Reports | Controls who can generate and approve reports |
+| CAPA | Determines who can create, assign, close CAPAs |
+| Documents | Controls document upload and approval rights |
+| Analytics | Limits who can view analytics data |
+| Risk Assessment | Controls who can create and assess risks |
+
+---
+
+#### Best Practices for Access Control
+
+1. **Follow least privilege** - Give users only the permissions they need
+2. **Use temporary assignments** - For short-term access needs, set expiry dates
+3. **Document override reasons** - Always explain why emergency access was granted
+4. **Review roles regularly** - Audit role assignments quarterly
+5. **Verify team competency** - Ensure audit team members are qualified
+6. **Segregate duties** - Don't let one person control entire processes
 
 ---
 
