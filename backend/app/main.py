@@ -57,7 +57,8 @@ app = FastAPI(
 )
 
 # Add error handling middleware first (processes responses)
-app.add_middleware(ErrorHandlingMiddleware)
+# Temporarily disabled to debug login issues
+# app.add_middleware(ErrorHandlingMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
