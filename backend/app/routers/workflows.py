@@ -101,11 +101,18 @@ async def upload_workflow_document(
     file_size = len(content)
     
     # Upload to Supabase storage
-    file_path = f"workflows/{workflow_id}/{uuid4()}_{file.filename}"
-    file_url = supabase_storage.upload_file(content, file_path, file.content_type)
+    upload_result = supabase_storage.upload_file(
+        file_content=content,
+        file_name=file.filename,
+        audit_id=str(workflow_id),  # Use workflow_id as the folder identifier
+        user_id=str(current_user.id),
+        content_type=file.content_type
+    )
     
-    if not file_url:
-        raise HTTPException(status_code=500, detail="Failed to upload file")
+    if not upload_result.get("success"):
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {upload_result.get('error', 'Unknown error')}")
+    
+    file_url = upload_result.get("file_url")
     
     # Create document record
     document = WorkflowDocument(
