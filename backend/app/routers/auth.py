@@ -64,7 +64,7 @@ def login(email: str, db: Session = Depends(get_db)):
     # No 2FA, generate full access token
     token_data = {
         "user_id": str(user.id),
-        "role": user.role.value,
+        "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
         "department_id": str(user.department_id) if user.department_id else None
     }
     access_token = create_access_token(data=token_data)
@@ -110,7 +110,7 @@ def verify_2fa_login(
             # Generate full access token
             token_data = {
                 "user_id": str(user.id),
-                "role": user.role.value,
+                "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
                 "department_id": str(user.department_id) if user.department_id else None
             }
             access_token = create_access_token(data=token_data)
@@ -131,7 +131,7 @@ def verify_2fa_login(
                 
                 token_data = {
                     "user_id": str(user.id),
-                    "role": user.role.value,
+                    "role": user.role.value if hasattr(user.role, 'value') else str(user.role),
                     "department_id": str(user.department_id) if user.department_id else None
                 }
                 access_token = create_access_token(data=token_data)
