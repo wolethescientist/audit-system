@@ -124,7 +124,7 @@ async def get_performance_trends(
 @router.get("/performance/alerts", response_model=Dict[str, Any])
 async def get_performance_alerts(
     hours: int = Query(24, ge=1, le=168, description="Time period in hours (1-168)"),
-    level: Optional[str] = Query(None, regex="^(warning|critical)$", description="Alert level filter"),
+    level: Optional[str] = Query(None, pattern="^(warning|critical)$", description="Alert level filter"),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -232,7 +232,7 @@ async def get_audit_trail(
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     action_type: Optional[str] = Query(None, description="Filter by action type"),
     resource_type: Optional[str] = Query(None, description="Filter by resource type"),
-    risk_level: Optional[str] = Query(None, regex="^(low|medium|high|critical)$", description="Filter by risk level"),
+    risk_level: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$", description="Filter by risk level"),
     hours: int = Query(24, ge=1, le=168, description="Time period in hours (1-168)"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of records (1-1000)"),
     current_user: User = Depends(get_current_user),
