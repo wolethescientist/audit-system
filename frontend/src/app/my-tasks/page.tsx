@@ -19,6 +19,7 @@ export default function MyTasksPage() {
   const [tasks, setTasks] = useState<PendingTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'action' | 'waiting'>('all');
 
   useEffect(() => {
     const initializePage = async () => {
@@ -190,6 +191,40 @@ export default function MyTasksPage() {
         <p className="text-gray-600">Workflows waiting for your action</p>
       </div>
 
+      {/* Filters */}
+      <div className="mb-6 bg-white rounded-lg shadow-sm border-0 p-4">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Filters & Sorting</h3>
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Status</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                statusFilter === 'all' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All Tasks
+            </button>
+            <button
+              onClick={() => setStatusFilter('action')}
+              className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                statusFilter === 'action' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Action Required
+            </button>
+            <button
+              onClick={() => setStatusFilter('waiting')}
+              className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                statusFilter === 'waiting' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Waiting
+            </button>
+          </div>
+        </div>
+      </div>
+
       {tasks.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <div className="text-6xl mb-4">✅</div>
@@ -199,7 +234,7 @@ export default function MyTasksPage() {
       ) : (
         <>
           {/* Active Tasks - My Turn */}
-          {tasks.filter(t => t.isMyTurn).length > 0 && (
+          {(statusFilter === 'all' || statusFilter === 'action') && tasks.filter(t => t.isMyTurn).length > 0 && (
             <div className="mb-8">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
@@ -214,7 +249,7 @@ export default function MyTasksPage() {
           )}
 
           {/* Upcoming Tasks - Waiting for Previous Steps */}
-          {tasks.filter(t => !t.isMyTurn).length > 0 && (
+          {(statusFilter === 'all' || statusFilter === 'waiting') && tasks.filter(t => !t.isMyTurn).length > 0 && (
             <div>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
@@ -225,6 +260,18 @@ export default function MyTasksPage() {
                   <TaskCard key={task.workflow.id} task={task} router={router} isOverdue={isOverdue} getActionLabel={getActionLabel} getActionColor={getActionColor} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Show empty state if filter results in no items */}
+          {statusFilter === 'action' && tasks.filter(t => t.isMyTurn).length === 0 && (
+            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+              No tasks requiring immediate action
+            </div>
+          )}
+          {statusFilter === 'waiting' && tasks.filter(t => !t.isMyTurn).length === 0 && (
+            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+              No tasks waiting for previous steps
             </div>
           )}
         </>

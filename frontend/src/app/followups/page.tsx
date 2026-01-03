@@ -232,16 +232,16 @@ export default function FollowupsPage() {
       </div>
 
       {/* Filters and Controls */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filters & Sorting</CardTitle>
+      <Card className="mb-6 border-0 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-bold text-gray-900">Filters & Sorting</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Status</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,9 +255,9 @@ export default function FollowupsPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Sort By</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Sort By</label>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,9 +269,9 @@ export default function FollowupsPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Order</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Order</label>
               <Select value={sortOrder} onValueChange={setSortOrder}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -285,7 +285,7 @@ export default function FollowupsPage() {
               <Button 
                 variant={overdueOnly ? "default" : "outline"}
                 onClick={() => setOverdueOnly(!overdueOnly)}
-                className="w-full"
+                className={`w-full h-9 text-sm font-semibold ${overdueOnly ? 'bg-green-600 hover:bg-green-700' : 'border-gray-200 hover:bg-gray-50'}`}
               >
                 {overdueOnly ? "Show All" : "Overdue Only"}
               </Button>

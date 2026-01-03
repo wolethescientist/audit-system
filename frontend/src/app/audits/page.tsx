@@ -43,22 +43,27 @@ export default function AuditsPage() {
         </Link>
       </div>
 
-      <div className="mb-6">
-        <label htmlFor="status-filter" className="mr-3 text-sm font-medium text-gray-700">
-          Filter by Status:
-        </label>
-        <select
-          id="status-filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        >
-          {AUDIT_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status === 'all' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1)}
-            </option>
-          ))}
-        </select>
+      <div className="mb-6 bg-white rounded-lg shadow-sm border-0 p-4">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">Filters & Sorting</h3>
+        <div className="flex items-end gap-6">
+          <div>
+            <label htmlFor="status-filter" className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
+              Status
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 px-3 text-sm border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              {AUDIT_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status === 'all' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
       
       {isLoading ? (

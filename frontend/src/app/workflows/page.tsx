@@ -253,40 +253,46 @@ export default function WorkflowsPage() {
 
       {activeTab === 'all' ? (
         <>
-          <div className="mb-6 flex gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg ${
-            filter === 'all' ? 'bg-green-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg ${
-            filter === 'pending' ? 'bg-green-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Pending
-        </button>
-        <button
-          onClick={() => setFilter('in_progress')}
-          className={`px-4 py-2 rounded-lg ${
-            filter === 'in_progress' ? 'bg-green-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          In Progress
-        </button>
-        <button
-          onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-lg ${
-            filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Completed
-        </button>
-      </div>
+          <div className="mb-6 bg-white rounded-lg shadow-sm border-0 p-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-3">Filters & Sorting</h3>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Status</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                    filter === 'all' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilter('pending')}
+                  className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                    filter === 'pending' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setFilter('in_progress')}
+                  className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                    filter === 'in_progress' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  In Progress
+                </button>
+                <button
+                  onClick={() => setFilter('completed')}
+                  className={`px-4 py-2 h-9 text-sm font-semibold rounded-md transition-colors ${
+                    filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Completed
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div className="bg-white rounded-lg shadow">
         {workflows.length === 0 ? (
