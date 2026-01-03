@@ -181,7 +181,7 @@ class RiskAssessmentUpdate(BaseModel):
 
 class RiskAssessmentResponse(BaseModel):
     id: UUID
-    asset_id: UUID
+    asset_id: Optional[UUID] = None  # Optional to handle legacy data without asset_id
     risk_title: str
     description: Optional[str]
     likelihood_score: int
