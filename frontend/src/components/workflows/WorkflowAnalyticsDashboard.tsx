@@ -146,15 +146,17 @@ export default function WorkflowAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Workflow Performance Analytics</h2>
+      <div className="flex justify-between items-center bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          Workflow Performance Analytics
+        </h2>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Period:</label>
+            <label className="text-sm font-medium text-gray-700">Period:</label>
             <select 
               value={daysBack} 
               onChange={(e) => setDaysBack(Number(e.target.value))}
-              className="border rounded px-2 py-1 text-sm"
+              className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
@@ -165,6 +167,7 @@ export default function WorkflowAnalyticsDashboard() {
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
+            className={autoRefresh ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg shadow-blue-500/30" : ""}
           >
             <Activity className="w-4 h-4 mr-2" />
             Auto Refresh
@@ -185,58 +188,62 @@ export default function WorkflowAnalyticsDashboard() {
       )}
 
       {/* Real-time Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Activity className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Workflows</p>
-                <p className="text-2xl font-bold">{monitoring?.active_workflows.count || 0}</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white overflow-hidden relative hover:shadow-xl transition-shadow">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-100 mb-1">Active Workflows</p>
+                <p className="text-4xl font-bold">{monitoring?.active_workflows.count || 0}</p>
               </div>
+              <Activity className="h-12 w-12 text-white/30" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed Today</p>
-                <p className="text-2xl font-bold">{monitoring?.daily_metrics.workflows_completed_today || 0}</p>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white overflow-hidden relative hover:shadow-xl transition-shadow">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-100 mb-1">Completed Today</p>
+                <p className="text-4xl font-bold">{monitoring?.daily_metrics.workflows_completed_today || 0}</p>
               </div>
+              <TrendingUp className="h-12 w-12 text-white/30" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Database className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">DB Response</p>
-                <p className="text-2xl font-bold">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white overflow-hidden relative hover:shadow-xl transition-shadow">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-100 mb-1">DB Response</p>
+                <p className="text-4xl font-bold">
                   {monitoring?.system_performance.database_response_time_seconds 
                     ? `${Math.round(monitoring.system_performance.database_response_time_seconds * 1000)}ms`
                     : '0ms'
                   }
                 </p>
               </div>
+              <Database className="h-12 w-12 text-white/30" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Zap className={`h-8 w-8 ${monitoring?.system_performance.performance_status === 'good' ? 'text-green-600' : 'text-yellow-600'}`} />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">System Status</p>
-                <Badge className={getPerformanceStatusColor(monitoring?.system_performance.performance_status || 'unknown')}>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-red-600 text-white overflow-hidden relative hover:shadow-xl transition-shadow">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <CardContent className="p-6 relative z-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-100 mb-1">System Status</p>
+                <Badge className={`${getPerformanceStatusColor(monitoring?.system_performance.performance_status || 'unknown')} font-semibold`}>
                   {monitoring?.system_performance.performance_status || 'Unknown'}
                 </Badge>
               </div>
+              <Zap className="h-12 w-12 text-white/30" />
             </div>
           </CardContent>
         </Card>
@@ -244,49 +251,49 @@ export default function WorkflowAnalyticsDashboard() {
 
       {/* Overview Statistics */}
       {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white">
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-2xl font-bold">{analytics.overview.total_workflows}</p>
-                <p className="text-sm text-gray-600">Total Workflows</p>
+                <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{analytics.overview.total_workflows}</p>
+                <p className="text-sm text-gray-600 font-medium mt-2">Total Workflows</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-emerald-50 to-teal-50">
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{analytics.overview.completed_workflows}</p>
-                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-4xl font-bold text-emerald-600">{analytics.overview.completed_workflows}</p>
+                <p className="text-sm text-gray-700 font-medium mt-2">Completed</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-blue-50 to-indigo-50">
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{analytics.overview.in_progress_workflows}</p>
-                <p className="text-sm text-gray-600">In Progress</p>
+                <p className="text-4xl font-bold text-blue-600">{analytics.overview.in_progress_workflows}</p>
+                <p className="text-sm text-gray-700 font-medium mt-2">In Progress</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-purple-50 to-pink-50">
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-2xl font-bold">{analytics.overview.completion_rate}%</p>
-                <p className="text-sm text-gray-600">Completion Rate</p>
-                <Progress value={analytics.overview.completion_rate} className="mt-2" />
+                <p className="text-4xl font-bold text-purple-600">{analytics.overview.completion_rate}%</p>
+                <p className="text-sm text-gray-700 font-medium mt-2">Completion Rate</p>
+                <Progress value={analytics.overview.completion_rate} className="mt-3 h-2" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-orange-50 to-red-50">
             <CardContent className="p-6">
               <div className="text-center">
-                <p className="text-2xl font-bold">{formatDuration(analytics.overview.average_completion_time_hours)}</p>
-                <p className="text-sm text-gray-600">Avg. Completion Time</p>
+                <p className="text-4xl font-bold text-orange-600">{formatDuration(analytics.overview.average_completion_time_hours)}</p>
+                <p className="text-sm text-gray-700 font-medium mt-2">Avg. Completion Time</p>
               </div>
             </CardContent>
           </Card>
@@ -295,10 +302,10 @@ export default function WorkflowAnalyticsDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bottlenecks Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
+        <Card className="border-0 shadow-lg bg-white">
+          <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 border-b">
+            <CardTitle className="flex items-center gap-2 text-orange-900">
+              <AlertTriangle className="w-5 h-5" />
               Performance Bottlenecks
             </CardTitle>
           </CardHeader>
@@ -325,10 +332,10 @@ export default function WorkflowAnalyticsDashboard() {
         </Card>
 
         {/* Department Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
+        <Card className="border-0 shadow-lg bg-white">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <TrendingUp className="w-5 h-5" />
               Department Performance
             </CardTitle>
           </CardHeader>
@@ -357,10 +364,10 @@ export default function WorkflowAnalyticsDashboard() {
 
       {/* Active Workflows Details */}
       {monitoring?.active_workflows.details && monitoring.active_workflows.details.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
+        <Card className="border-0 shadow-lg bg-white">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Activity className="w-5 h-5" />
               Active Workflows
             </CardTitle>
           </CardHeader>
@@ -411,10 +418,10 @@ export default function WorkflowAnalyticsDashboard() {
 
       {/* Performance Trends */}
       {analytics && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-purple-600" />
+        <Card className="border-0 shadow-lg bg-white">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+            <CardTitle className="flex items-center gap-2 text-purple-900">
+              <Settings className="w-5 h-5" />
               Performance Summary
             </CardTitle>
           </CardHeader>

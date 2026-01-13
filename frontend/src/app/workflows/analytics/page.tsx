@@ -106,46 +106,48 @@ export default function WorkflowAnalyticsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Workflow Performance & Optimization</h1>
-        <p className="text-gray-600">Monitor workflow performance, manage automation rules, and optimize system performance</p>
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          Workflow Performance & Optimization
+        </h1>
+        <p className="text-gray-700 text-lg">Monitor workflow performance, manage automation rules, and optimize system performance</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
-        <div className="flex gap-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 p-2">
+        <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 border-b-2 whitespace-nowrap ${
+            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
               activeTab === 'analytics'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent hover:border-primary-600'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <TrendingUp className="w-4 h-4 inline mr-2" />
+            <TrendingUp className="w-5 h-5 inline mr-2" />
             Analytics Dashboard
           </button>
           <button
             onClick={() => setActiveTab('automation')}
-            className={`px-4 py-2 border-b-2 whitespace-nowrap ${
+            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
               activeTab === 'automation'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent hover:border-primary-600'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/30'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <Settings className="w-4 h-4 inline mr-2" />
+            <Settings className="w-5 h-5 inline mr-2" />
             Automation Rules
           </button>
           <button
             onClick={() => setActiveTab('optimization')}
-            className={`px-4 py-2 border-b-2 whitespace-nowrap ${
+            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
               activeTab === 'optimization'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent hover:border-primary-600'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <Database className="w-4 h-4 inline mr-2" />
+            <Database className="w-5 h-5 inline mr-2" />
             System Optimization
           </button>
         </div>
@@ -160,60 +162,64 @@ export default function WorkflowAnalyticsPage() {
       {activeTab === 'automation' && (
         <div className="space-y-6">
           {/* Automation Rules Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Settings className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Rules</p>
-                    <p className="text-2xl font-bold">{automationRules?.total_rules || 0}</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+              <CardContent className="p-6 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-100 mb-1">Total Rules</p>
+                    <p className="text-4xl font-bold">{automationRules?.total_rules || 0}</p>
                   </div>
+                  <Settings className="h-12 w-12 text-white/30" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Rules</p>
-                    <p className="text-2xl font-bold">{automationRules?.active_rules || 0}</p>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+              <CardContent className="p-6 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-100 mb-1">Active Rules</p>
+                    <p className="text-4xl font-bold">{automationRules?.active_rules || 0}</p>
                   </div>
+                  <CheckCircle className="h-12 w-12 text-white/30" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Clock className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Time-based</p>
-                    <p className="text-2xl font-bold">{automationRules?.rule_categories.time_based || 0}</p>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+              <CardContent className="p-6 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-100 mb-1">Time-based</p>
+                    <p className="text-4xl font-bold">{automationRules?.rule_categories.time_based || 0}</p>
                   </div>
+                  <Clock className="h-12 w-12 text-white/30" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Activity className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Event-based</p>
-                    <p className="text-2xl font-bold">{automationRules?.rule_categories.event_based || 0}</p>
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-red-600 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+              <CardContent className="p-6 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-orange-100 mb-1">Event-based</p>
+                    <p className="text-4xl font-bold">{automationRules?.rule_categories.event_based || 0}</p>
                   </div>
+                  <Activity className="h-12 w-12 text-white/30" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Automation Rules List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+              <CardTitle className="flex items-center gap-2 text-purple-900">
                 <Settings className="w-5 h-5" />
                 Automation Rules Configuration
               </CardTitle>
@@ -273,9 +279,9 @@ export default function WorkflowAnalyticsPage() {
       {/* System Optimization Tab */}
       {activeTab === 'optimization' && (
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b">
+              <CardTitle className="flex items-center gap-2 text-emerald-900">
                 <Database className="w-5 h-5" />
                 Database & Query Optimization
               </CardTitle>
@@ -289,7 +295,7 @@ export default function WorkflowAnalyticsPage() {
                 <Button 
                   onClick={() => optimizeMutation.mutate()}
                   disabled={optimizeMutation.isPending}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30"
                 >
                   <Zap className="w-4 h-4" />
                   {optimizeMutation.isPending ? 'Optimizing...' : 'Run Optimization'}
@@ -340,9 +346,9 @@ export default function WorkflowAnalyticsPage() {
           </Card>
 
           {/* Optimization History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Optimizations</CardTitle>
+          <Card className="border-0 shadow-lg bg-white">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+              <CardTitle className="text-blue-900">Recent Optimizations</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-gray-500">
