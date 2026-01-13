@@ -14,7 +14,8 @@ from app.schemas import (
     FindingCreate, FindingUpdate, FindingResponse,
     QueryCreate, QueryResponse,
     ReportCreate, ReportUpdate, ReportResponse,
-    FollowupCreate, FollowupUpdate, FollowupResponse
+    FollowupCreate, FollowupUpdate, FollowupResponse,
+    UserResponse
 )
 from app.auth import get_current_user, require_roles, require_audit_access, get_accessible_audits
 
@@ -127,6 +128,29 @@ def list_team_members(
 ):
     team = db.query(AuditTeam).filter(AuditTeam.audit_id == audit_id).all()
     return team
+
+@router.get("/{audit_id}/team-members", response_model=List[UserResponse])
+def get_audit_team_members(
+    audit_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all team members assigned to an audit
+    Requirements: 3.1
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Get all team members from AuditTeam table
+    team_members = db.query(User).join(
+        AuditTeam, AuditTeam.user_id == User.id
+    ).filter(
+        AuditTeam.audit_id == audit_id
+    ).all()
+    
+    return team_members
 
 # Work Program
 @router.post("/{audit_id}/work-program", response_model=WorkProgramResponse)
@@ -310,6 +334,27 @@ def create_finding(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER, UserRole.AUDITOR]))
 ):
+    """
+    Create a new finding with flexible team member assignment
+    Requirements: 3.1, 3.2, 3.3
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    # Validate assignee is a team member
+    if finding_data.assigned_to_id:
+        is_team_member = db.query(AuditTeam).filter(
+            AuditTeam.audit_id == audit_id,
+            AuditTeam.user_id == finding_data.assigned_to_id
+        ).first()
+        
+        if not is_team_member:
+            raise HTTPException(
+                status_code=400,
+                detail="Assignee must be a member of the audit team"
+            )
+    
     finding = AuditFinding(audit_id=audit_id, **finding_data.model_dump())
     db.add(finding)
     db.commit()
@@ -339,6 +384,19 @@ def update_finding(
     ).first()
     if not finding:
         raise HTTPException(status_code=404, detail="Finding not found")
+    
+    # Validate assignee is a team member if being updated
+    if finding_data.assigned_to_id is not None:
+        is_team_member = db.query(AuditTeam).filter(
+            AuditTeam.audit_id == audit_id,
+            AuditTeam.user_id == finding_data.assigned_to_id
+        ).first()
+        
+        if not is_team_member:
+            raise HTTPException(
+                status_code=400,
+                detail="Assignee must be a member of the audit team"
+            )
     
     for key, value in finding_data.model_dump(exclude_unset=True).items():
         setattr(finding, key, value)

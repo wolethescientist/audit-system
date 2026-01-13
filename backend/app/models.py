@@ -52,7 +52,14 @@ class User(Base):
     totp_enabled = Column(Boolean, default=False)    # Whether 2FA is enabled for this user
     backup_codes = Column(Text, nullable=True)       # JSON array of hashed backup codes
     
+    # Soft delete fields
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime, nullable=True)
+    deleted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    deletion_reason = Column(Text, nullable=True)
+    
     department = relationship("Department", back_populates="users")
+    deleted_by = relationship("User", remote_side=[id], foreign_keys=[deleted_by_id])
 
 class Department(Base):
     __tablename__ = "departments"
@@ -191,9 +198,11 @@ class AuditFinding(Base):
     recommendation = Column(Text)
     response_from_auditee = Column(Text)
     status = Column(String, default="open")
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     audit = relationship("Audit")
+    assigned_to = relationship("User")
 
 class AuditQuery(Base):
     __tablename__ = "audit_queries"

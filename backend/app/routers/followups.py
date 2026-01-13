@@ -98,6 +98,9 @@ def update_followup(
 def get_my_followups(
     status: Optional[str] = Query(None, description="Filter by status"),
     overdue_only: Optional[bool] = Query(False, description="Show only overdue items"),
+    assigned_to_id: Optional[UUID] = Query(None, description="Filter by assignee"),
+    start_date: Optional[datetime] = Query(None, description="Filter by start date"),
+    end_date: Optional[datetime] = Query(None, description="Filter by end date"),
     audit_id: Optional[UUID] = Query(None, description="Filter by specific audit"),
     sort_by: Optional[str] = Query("due_date", description="Sort by: due_date, created_at, status"),
     sort_order: Optional[str] = Query("asc", description="Sort order: asc, desc"),
@@ -107,20 +110,24 @@ def get_my_followups(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get user-specific follow-up list with advanced filtering and sorting
-    Requirements: 2.5, 14.1, 14.2, 14.3, 14.4
+    Get user-specific follow-up list with comprehensive filtering and sorting
+    Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 14.1, 14.2, 14.3, 14.4
     """
     from sqlalchemy import func
     
-    # Base query for user's assigned follow-ups
-    query = db.query(AuditFollowup).filter(
-        AuditFollowup.assigned_to_id == current_user.id
-    )
+    # Base query - role-based access control
+    query = db.query(AuditFollowup)
     
-    # Apply filters (case-insensitive status comparison)
+    # Apply role-based filtering
+    if current_user.role not in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
+        # Regular users see only their assigned follow-ups
+        query = query.filter(AuditFollowup.assigned_to_id == current_user.id)
+    
+    # Status filter (case-insensitive status comparison)
     if status:
         query = query.filter(func.lower(AuditFollowup.status) == status.lower())
     
+    # Overdue filter
     if overdue_only:
         query = query.filter(
             and_(
@@ -129,6 +136,17 @@ def get_my_followups(
             )
         )
     
+    # Assignee filter (for managers/admins)
+    if assigned_to_id and current_user.role in [UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]:
+        query = query.filter(AuditFollowup.assigned_to_id == assigned_to_id)
+    
+    # Date range filters
+    if start_date:
+        query = query.filter(AuditFollowup.due_date >= start_date)
+    if end_date:
+        query = query.filter(AuditFollowup.due_date <= end_date)
+    
+    # Audit filter
     if audit_id:
         query = query.filter(AuditFollowup.audit_id == audit_id)
     

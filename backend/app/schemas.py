@@ -66,8 +66,45 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     
+    # Soft delete fields (optional, admin-only visible)
+    is_deleted: Optional[bool] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by_id: Optional[UUID] = None
+    deletion_reason: Optional[str] = None
+    
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_user(cls, user: 'User', include_soft_delete: bool = False):
+        """
+        Create UserResponse from User model with optional soft delete fields.
+        
+        Args:
+            user: User model instance
+            include_soft_delete: Whether to include soft delete fields (admin-only)
+        
+        Returns:
+            UserResponse with or without soft delete fields based on permissions
+        """
+        data = {
+            'id': user.id,
+            'email': user.email,
+            'full_name': user.full_name,
+            'role': user.role,
+            'department_id': user.department_id,
+            'is_active': user.is_active,
+            'created_at': user.created_at,
+        }
+        
+        # Only include soft delete fields if requested (for admins)
+        if include_soft_delete:
+            data['is_deleted'] = user.is_deleted
+            data['deleted_at'] = user.deleted_at
+            data['deleted_by_id'] = user.deleted_by_id
+            data['deletion_reason'] = user.deletion_reason
+        
+        return cls(**data)
 
 # Department Schemas
 class DepartmentBase(BaseModel):
@@ -239,6 +276,7 @@ class FindingCreate(BaseModel):
     impact: Optional[str] = None
     root_cause: Optional[str] = None
     recommendation: Optional[str] = None
+    assigned_to_id: Optional[UUID] = None
 
 class FindingUpdate(BaseModel):
     title: Optional[str] = None
@@ -248,6 +286,7 @@ class FindingUpdate(BaseModel):
     recommendation: Optional[str] = None
     response_from_auditee: Optional[str] = None
     status: Optional[str] = None
+    assigned_to_id: Optional[UUID] = None
 
 class FindingResponse(BaseModel):
     id: UUID
@@ -259,6 +298,7 @@ class FindingResponse(BaseModel):
     recommendation: Optional[str]
     response_from_auditee: Optional[str]
     status: str
+    assigned_to_id: Optional[UUID]
     created_at: datetime
     
     class Config:

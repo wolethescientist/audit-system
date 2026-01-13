@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Users, UserPlus, Shield, Settings, Search, Filter, 
-  CheckCircle, AlertCircle, Clock, X, Edit, Trash2 
+  Users, UserPlus, Shield, Settings, Search, 
+  CheckCircle, AlertCircle, Clock, Trash2, ExternalLink
 } from 'lucide-react';
 import { rbacApi, api } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 
 interface User {
   id: string;
@@ -74,6 +75,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
   const [isTemporary, setIsTemporary] = useState(false);
   const [expiryDate, setExpiryDate] = useState('');
 
+  // New user creation state
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: '',
+    full_name: '',
+    role: '',
+    department_id: ''
+  });
+
+  // Delete user state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deletionReason, setDeletionReason] = useState('');
+
+  // Get current user from auth store
+  const currentUser = useAuthStore((state) => state.user);
+
+  // State for assignable roles
+  const [assignableRoles, setAssignableRoles] = useState<string[]>([]);
+
   const userRoles = [
     { value: 'system_admin', label: 'System Administrator' },
     { value: 'audit_manager', label: 'Audit Manager' },
@@ -87,7 +108,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
     loadUsers();
     loadDepartments();
     loadRoleMatrix();
+    loadAssignableRoles();
   }, []);
+
+  const loadAssignableRoles = async () => {
+    try {
+      const response = await api.get('/users/assignable-roles');
+      setAssignableRoles(response.data);
+    } catch (err) {
+      console.error('Error loading assignable roles:', err);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -174,6 +205,88 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newUserData.email || !newUserData.full_name || !newUserData.role) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await api.post('/users/', newUserData);
+      
+      setSuccess(`User ${newUserData.full_name} created successfully`);
+      
+      // Reset form
+      setNewUserData({
+        email: '',
+        full_name: '',
+        role: '',
+        department_id: ''
+      });
+      setShowCreateUser(false);
+      
+      // Reload users
+      await loadUsers();
+      
+      if (onUserUpdated) {
+        onUserUpdated();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const params = deletionReason ? `?deletion_reason=${encodeURIComponent(deletionReason)}` : '';
+      await api.delete(`/users/${userToDelete.id}${params}`);
+      
+      setSuccess(`User ${userToDelete.full_name} has been soft deleted`);
+      
+      // Reset state
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+      setDeletionReason('');
+      setSelectedUser(null);
+      
+      // Reload users
+      await loadUsers();
+      
+      if (onUserUpdated) {
+        onUserUpdated();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
+
+  // Check if current user can create users
+  const canCreateUsers = currentUser && ['system_admin', 'audit_manager', 'department_head'].includes(currentUser.role || '');
+
+  // Filter role options based on assignable roles
+  const availableRoles = userRoles.filter(role => 
+    assignableRoles.includes(role.value)
+  );
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -216,6 +329,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
           <h2 className="text-2xl font-bold">User Management</h2>
           <p className="text-gray-600">Manage users and role assignments with enhanced RBAC</p>
         </div>
+        <div className="flex gap-2">
+          {currentUser?.role === 'system_admin' && (
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/users/deleted'}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Deleted Users
+            </Button>
+          )}
+          {canCreateUsers && (
+            <Button onClick={() => setShowCreateUser(!showCreateUser)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Create User
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -230,6 +360,91 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>{success}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Create User Form */}
+      {showCreateUser && canCreateUsers && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Create New User
+            </CardTitle>
+            <CardDescription>
+              Add a new user to the system
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name *</label>
+                <Input
+                  placeholder="Enter full name"
+                  value={newUserData.full_name}
+                  onChange={(e) => setNewUserData({...newUserData, full_name: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email *</label>
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({...newUserData, email: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Role *</label>
+                <Select 
+                  value={newUserData.role} 
+                  onValueChange={(value) => setNewUserData({...newUserData, role: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Department</label>
+                <Select 
+                  value={newUserData.department_id} 
+                  onValueChange={(value) => setNewUserData({...newUserData, department_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Department</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleCreateUser} disabled={loading}>
+                {loading ? 'Creating...' : 'Create User'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowCreateUser(false)}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -366,6 +581,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Delete User Button */}
+                  {currentUser?.role === 'system_admin' && selectedUser.id !== currentUser.id && (
+                    <div className="mt-4 pt-4 border-t">
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => openDeleteDialog(selectedUser)}
+                        className="w-full"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete User
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -512,6 +741,62 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUserUpdated }) => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                Confirm User Deletion
+              </CardTitle>
+              <CardDescription>
+                This will soft delete the user. The user can be restored later by an administrator.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="font-medium">{userToDelete.full_name}</div>
+                <div className="text-sm text-gray-600">{userToDelete.email}</div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Deletion Reason (Optional)</label>
+                <Input
+                  placeholder="Enter reason for deletion..."
+                  value={deletionReason}
+                  onChange={(e) => setDeletionReason(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteUser}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? 'Deleting...' : 'Delete User'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setUserToDelete(null);
+                    setDeletionReason('');
+                  }}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

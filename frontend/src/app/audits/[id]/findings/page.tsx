@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Audit, AuditFinding, FindingSeverity } from '@/lib/types';
+import { Audit, AuditFinding, FindingSeverity, User } from '@/lib/types';
 import { useParams } from 'next/navigation';
 import AuditNavigation from '@/components/audit/AuditNavigation';
 
@@ -19,6 +19,7 @@ export default function FindingsPage() {
     root_cause: '',
     recommendation: '',
     response_from_auditee: '',
+    assigned_to_id: '',
   });
 
   const { data: audit } = useQuery<Audit>({
@@ -37,6 +38,16 @@ export default function FindingsPage() {
     },
   });
 
+  // Fetch audit team members
+  const { data: teamMembers = [] } = useQuery<User[]>({
+    queryKey: ['audit-team-members', auditId],
+    queryFn: async () => {
+      const response = await api.get(`/audits/${auditId}/team-members`);
+      return response.data;
+    },
+    enabled: !!auditId,
+  });
+
   const createFinding = useMutation({
     mutationFn: async (data: typeof formData) => {
       const response = await api.post(`/audits/${auditId}/findings`, data);
@@ -52,6 +63,7 @@ export default function FindingsPage() {
         root_cause: '',
         recommendation: '',
         response_from_auditee: '',
+        assigned_to_id: '',
       });
     },
   });
@@ -90,6 +102,15 @@ export default function FindingsPage() {
                   {finding.root_cause && <p><strong>Root Cause:</strong> {finding.root_cause}</p>}
                   {finding.recommendation && <p><strong>Recommendation:</strong> {finding.recommendation}</p>}
                   {finding.response_from_auditee && <p><strong>Response:</strong> {finding.response_from_auditee}</p>}
+                  {finding.assigned_to_id && (
+                    <p className="flex items-center gap-2 mt-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <strong>Assigned to:</strong> 
+                      <span>{teamMembers.find(m => m.id === finding.assigned_to_id)?.full_name || 'Unknown'}</span>
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -131,6 +152,21 @@ export default function FindingsPage() {
                   <option value={FindingSeverity.MEDIUM}>Medium</option>
                   <option value={FindingSeverity.HIGH}>High</option>
                   <option value={FindingSeverity.CRITICAL}>Critical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Assign to Team Member</label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={formData.assigned_to_id}
+                  onChange={(e) => setFormData({ ...formData, assigned_to_id: e.target.value })}
+                >
+                  <option value="">Unassigned</option>
+                  {teamMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name} - {member.role}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

@@ -325,6 +325,17 @@ export const rbacApi = {
     });
     return response.data;
   },
+
+  // Simplified Access Control
+  getPermissionGroups: async () => {
+    const response = await api.get('/rbac/permission-groups');
+    return response.data;
+  },
+
+  getRoleTemplates: async () => {
+    const response = await api.get('/rbac/role-templates');
+    return response.data;
+  },
 };
 
 // Two-Factor Authentication API Functions

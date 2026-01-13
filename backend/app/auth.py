@@ -61,7 +61,20 @@ async def get_current_user(
     token_data = verify_token(token)
     
     user = db.query(User).filter(User.id == token_data.user_id).first()
-    if user is None or not user.is_active:
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive"
+        )
+    
+    # Check if user is soft-deleted
+    if user.is_deleted:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been deactivated. Please contact your administrator."
+        )
+    
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive"
@@ -361,3 +374,44 @@ def validate_team_member_eligibility(user_id: UUID, db: Session) -> bool:
     # Only auditors and audit managers can be assigned to audit teams
     eligible_roles = [UserRole.AUDITOR, UserRole.AUDIT_MANAGER]
     return user.role in eligible_roles
+
+def can_manage_users(current_user: User, target_department_id: Optional[UUID] = None) -> bool:
+    """
+    Check if user can manage other users
+    Requirements: 1.1, 1.2, 1.5
+    - SYSTEM_ADMIN: Can manage all users
+    - AUDIT_MANAGER: Can manage users in their department
+    - DEPARTMENT_HEAD: Can manage users in their department
+    """
+    if current_user.role == UserRole.SYSTEM_ADMIN:
+        return True
+    
+    if current_user.role in [UserRole.AUDIT_MANAGER, UserRole.DEPARTMENT_HEAD]:
+        if target_department_id:
+            return current_user.department_id == target_department_id
+        return True  # Can create users in their department
+    
+    return False
+
+def get_assignable_roles(current_user: User) -> List[UserRole]:
+    """
+    Get list of roles that current user can assign
+    Requirements: 1.3, 1.4
+    """
+    if current_user.role == UserRole.SYSTEM_ADMIN:
+        return list(UserRole)
+    
+    if current_user.role == UserRole.AUDIT_MANAGER:
+        return [
+            UserRole.AUDITOR,
+            UserRole.DEPARTMENT_OFFICER,
+            UserRole.VIEWER
+        ]
+    
+    if current_user.role == UserRole.DEPARTMENT_HEAD:
+        return [
+            UserRole.DEPARTMENT_OFFICER,
+            UserRole.VIEWER
+        ]
+    
+    return []

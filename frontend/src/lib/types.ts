@@ -74,6 +74,8 @@ export interface AuditFinding {
   recommendation?: string;
   response_from_auditee?: string;
   status: string;
+  assigned_to_id?: string;
+  assigned_to?: User;
   created_at: string;
 }
 

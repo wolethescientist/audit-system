@@ -36,20 +36,62 @@ interface FollowupStats {
   completion_rate: number;
 }
 
+interface UserType {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
+interface AuditType {
+  id: string;
+  title: string;
+  status: string;
+}
+
 export default function FollowupsPage() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [overdueOnly, setOverdueOnly] = useState(false);
+  // Enhanced filter state
+  const [filters, setFilters] = useState({
+    status: '',
+    assignee: '',
+    auditId: '',
+    startDate: '',
+    endDate: '',
+    overdueOnly: false
+  });
   const [sortBy, setSortBy] = useState('due_date');
   const [sortOrder, setSortOrder] = useState('asc');
   const queryClient = useQueryClient();
 
-  // Fetch user's follow-ups with filtering
+  // Fetch users for assignee filter
+  const { data: users = [] } = useQuery<UserType[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/users/');
+      return response.data;
+    }
+  });
+
+  // Fetch audits for audit filter
+  const { data: audits = [] } = useQuery<AuditType[]>({
+    queryKey: ['audits'],
+    queryFn: async () => {
+      const response = await api.get('/audits/');
+      return response.data;
+    }
+  });
+
+  // Fetch user's follow-ups with comprehensive filtering
   const { data: followups = [], isLoading: followupsLoading } = useQuery<Followup[]>({
-    queryKey: ['my-followups', statusFilter, overdueOnly, sortBy, sortOrder],
+    queryKey: ['my-followups', filters, sortBy, sortOrder],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (statusFilter) params.append('status', statusFilter);
-      if (overdueOnly) params.append('overdue_only', 'true');
+      if (filters.status) params.append('status', filters.status);
+      if (filters.assignee) params.append('assigned_to_id', filters.assignee);
+      if (filters.auditId) params.append('audit_id', filters.auditId);
+      if (filters.startDate) params.append('start_date', filters.startDate);
+      if (filters.endDate) params.append('end_date', filters.endDate);
+      if (filters.overdueOnly) params.append('overdue_only', 'true');
       params.append('sort_by', sortBy);
       params.append('sort_order', sortOrder);
       
@@ -100,6 +142,18 @@ export default function FollowupsPage() {
     },
   });
 
+  // Clear filters function
+  const clearFilters = () => {
+    setFilters({
+      status: '',
+      assignee: '',
+      auditId: '',
+      startDate: '',
+      endDate: '',
+      overdueOnly: false
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -119,8 +173,8 @@ export default function FollowupsPage() {
     );
   };
 
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date() && !['completed', 'closed'].includes(followups.find(f => f.due_date === dueDate)?.status || '');
+  const isOverdue = (dueDate: string, status: string) => {
+    return new Date(dueDate) < new Date() && !['completed', 'closed'].includes(status);
   };
 
   const formatDate = (dateString: string) => {
@@ -231,16 +285,17 @@ export default function FollowupsPage() {
         </Card>
       </div>
 
-      {/* Filters and Controls */}
+      {/* Enhanced Filters and Controls */}
       <Card className="mb-6 border-0 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold text-gray-900">Filters & Sorting</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+            {/* Status Filter */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Status</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
                 <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
@@ -253,7 +308,64 @@ export default function FollowupsPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
+            {/* Assignee Filter */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Assignee</label>
+              <Select value={filters.assignee} onValueChange={(value) => setFilters({...filters, assignee: value})}>
+                <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
+                  <SelectValue placeholder="All assignees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All assignees</SelectItem>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>{user.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Audit Filter */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Audit</label>
+              <Select value={filters.auditId} onValueChange={(value) => setFilters({...filters, auditId: value})}>
+                <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500">
+                  <SelectValue placeholder="All audits" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All audits</SelectItem>
+                  {audits.map(audit => (
+                    <SelectItem key={audit.id} value={audit.id}>{audit.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Start Date Filter */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Start Date</label>
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500"
+              />
+            </div>
+
+            {/* End Date Filter */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">End Date</label>
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                className="h-9 text-sm border-gray-200 focus:border-green-500 focus:ring-green-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Sort By */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Sort By</label>
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -268,6 +380,7 @@ export default function FollowupsPage() {
               </Select>
             </div>
             
+            {/* Sort Order */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Order</label>
               <Select value={sortOrder} onValueChange={setSortOrder}>
@@ -281,13 +394,25 @@ export default function FollowupsPage() {
               </Select>
             </div>
             
+            {/* Overdue Only Toggle */}
             <div className="flex items-end">
               <Button 
-                variant={overdueOnly ? "default" : "outline"}
-                onClick={() => setOverdueOnly(!overdueOnly)}
-                className={`w-full h-9 text-sm font-semibold ${overdueOnly ? 'bg-green-600 hover:bg-green-700' : 'border-gray-200 hover:bg-gray-50'}`}
+                variant={filters.overdueOnly ? "default" : "outline"}
+                onClick={() => setFilters({...filters, overdueOnly: !filters.overdueOnly})}
+                className={`w-full h-9 text-sm font-semibold ${filters.overdueOnly ? 'bg-green-600 hover:bg-green-700' : 'border-gray-200 hover:bg-gray-50'}`}
               >
-                {overdueOnly ? "Show All" : "Overdue Only"}
+                {filters.overdueOnly ? "Show All" : "Overdue Only"}
+              </Button>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <Button 
+                variant="outline"
+                onClick={clearFilters}
+                className="w-full h-9 text-sm font-semibold border-gray-200 hover:bg-gray-50"
+              >
+                Clear Filters
               </Button>
             </div>
           </div>
@@ -313,7 +438,7 @@ export default function FollowupsPage() {
                 <div 
                   key={followup.id} 
                   className={`p-4 border rounded-lg ${
-                    followup.due_date && isOverdue(followup.due_date) 
+                    followup.due_date && isOverdue(followup.due_date, followup.status) 
                       ? 'border-red-200 bg-red-50' 
                       : 'border-gray-200'
                   }`}
@@ -322,7 +447,7 @@ export default function FollowupsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         {getStatusBadge(followup.status)}
-                        {followup.due_date && isOverdue(followup.due_date) && (
+                        {followup.due_date && isOverdue(followup.due_date, followup.status) && (
                           <Badge className="bg-red-100 text-red-800">
                             <AlertTriangle className="w-3 h-3 mr-1" />
                             OVERDUE

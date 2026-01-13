@@ -16,6 +16,7 @@ import TeamAssignment from '@/components/access/TeamAssignment';
 import UserManagement from '@/components/access/UserManagement';
 import AuditVisibility from '@/components/access/AuditVisibility';
 import RoleMatrix from '@/components/access/RoleMatrix';
+import SimplifiedPermissions from '@/components/access/SimplifiedPermissions';
 
 const AccessControlPage: React.FC = () => {
   const [selectedAuditId, setSelectedAuditId] = useState<string>('');
@@ -38,7 +39,7 @@ const AccessControlPage: React.FC = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="team-assignment" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="team-assignment" className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
               Team Assignment
@@ -46,6 +47,10 @@ const AccessControlPage: React.FC = () => {
             <TabsTrigger value="user-management" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               User Management
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Permissions
             </TabsTrigger>
             <TabsTrigger value="audit-visibility" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
@@ -105,6 +110,27 @@ const AccessControlPage: React.FC = () => {
             <ProtectedComponent permission="can_manage_users">
               <UserManagement onUserUpdated={() => console.log('User updated')} />
             </ProtectedComponent>
+          </TabsContent>
+
+          <TabsContent value="permissions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Simplified Permission Management
+                </CardTitle>
+                <CardDescription>
+                  Manage permissions using intuitive functional groups instead of individual permission checkboxes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProtectedComponent permission="can_manage_users">
+                  <SimplifiedPermissions 
+                    onGroupsChange={(groups) => console.log('Selected groups:', groups)}
+                  />
+                </ProtectedComponent>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="audit-visibility" className="space-y-6">

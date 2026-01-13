@@ -19,6 +19,83 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/rbac", tags=["Role-Based Access Control"])
 
+# Simplified Permission Groups Structure
+PERMISSION_GROUPS = {
+    "audit_management": {
+        "label": "Audit Management",
+        "description": "Create, view, and manage audits",
+        "permissions": [
+            "can_create_audits",
+            "can_view_audits",
+            "can_edit_audits",
+            "can_delete_audits"
+        ]
+    },
+    "findings_and_followups": {
+        "label": "Findings & Follow-ups",
+        "description": "Manage audit findings and follow-up actions",
+        "permissions": [
+            "can_create_findings",
+            "can_assign_findings",
+            "can_manage_followups"
+        ]
+    },
+    "risk_management": {
+        "label": "Risk Management",
+        "description": "Assess and manage organizational risks",
+        "permissions": [
+            "can_create_risks",
+            "can_assess_risks",
+            "can_approve_risk_treatments"
+        ]
+    },
+    "capa_management": {
+        "label": "CAPA Management",
+        "description": "Create and manage corrective actions",
+        "permissions": [
+            "can_create_capa",
+            "can_assign_capa",
+            "can_close_capa"
+        ]
+    },
+    "document_management": {
+        "label": "Document Management",
+        "description": "Upload, approve, and manage documents",
+        "permissions": [
+            "can_upload_documents",
+            "can_approve_documents",
+            "can_archive_documents"
+        ]
+    },
+    "reporting_and_analytics": {
+        "label": "Reporting & Analytics",
+        "description": "View reports and analytics dashboards",
+        "permissions": [
+            "can_view_analytics",
+            "can_export_data",
+            "can_approve_reports"
+        ]
+    },
+    "user_management": {
+        "label": "User Management",
+        "description": "Manage users and departments",
+        "permissions": [
+            "can_manage_users",
+            "can_manage_departments"
+        ]
+    },
+    "asset_and_vendor_management": {
+        "label": "Asset & Vendor Management",
+        "description": "Manage organizational assets and vendors",
+        "permissions": [
+            "can_manage_assets",
+            "can_assign_assets",
+            "can_manage_vendors",
+            "can_evaluate_vendors"
+        ]
+    }
+}
+
 # Enhanced Authentication and Authorization Schemas
 
 class TeamAssignmentRequest(BaseModel):
@@ -717,3 +794,57 @@ def get_user_role_assignments(
         }
         for assignment in assignments
     ]
+
+# Simplified Access Control Endpoints
+
+@router.get("/permission-groups")
+def get_permission_groups(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get simplified permission groups for UI
+    Requirements: 4.1, 4.2, 4.3
+    """
+    return PERMISSION_GROUPS
+
+@router.get("/role-templates")
+def get_role_templates(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get predefined role templates for quick assignment
+    Requirements: 4.5
+    """
+    templates = {
+        "auditor_standard": {
+            "name": "Standard Auditor",
+            "description": "Can conduct audits and create findings",
+            "permission_groups": ["audit_management", "findings_and_followups", "document_management"]
+        },
+        "risk_assessor": {
+            "name": "Risk Assessor",
+            "description": "Can assess and manage risks",
+            "permission_groups": ["risk_management", "reporting_and_analytics"]
+        },
+        "department_manager": {
+            "name": "Department Manager",
+            "description": "Can manage department audits and users",
+            "permission_groups": ["audit_management", "findings_and_followups", "reporting_and_analytics", "user_management"]
+        },
+        "capa_coordinator": {
+            "name": "CAPA Coordinator",
+            "description": "Can manage corrective and preventive actions",
+            "permission_groups": ["capa_management", "findings_and_followups", "reporting_and_analytics"]
+        },
+        "document_controller": {
+            "name": "Document Controller",
+            "description": "Can manage and approve documents",
+            "permission_groups": ["document_management", "reporting_and_analytics"]
+        },
+        "compliance_officer": {
+            "name": "Compliance Officer",
+            "description": "Can view audits, risks, and generate reports",
+            "permission_groups": ["audit_management", "risk_management", "reporting_and_analytics"]
+        }
+    }
+    return templates
