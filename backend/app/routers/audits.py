@@ -606,6 +606,7 @@ def initiate_audit(
     """
     ISO 19011 Clause 6.2 - Initiate the audit
     Establishes audit objectives, scope, criteria, and team assignment
+    Can be updated at any time regardless of audit status
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -614,49 +615,40 @@ def initiate_audit(
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found")
     
-    logger.info(f"Audit initiation - ID: {audit_id}, Current status: {audit.status}, Type: {type(audit.status)}")
+    logger.info(f"Audit initiation update - ID: {audit_id}, Current status: {audit.status}")
     
-    # Allow initiation from PLANNED or INITIATED status (for updates)
-    # Handle both enum and string comparison for database compatibility
-    status_str = audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
-    allowed_statuses = ['PLANNED', 'INITIATED', 'planned', 'initiated']
-    
-    if status_str not in allowed_statuses:
-        raise HTTPException(status_code=400, detail=f"Audit must be in planned or initiated status to initiate. Current status: {status_str}")
-    
-    # Validate required ISO 19011 fields
-    logger.info(f"Initiation data received: {initiation_data}")
-    required_fields = ["audit_objectives", "audit_criteria", "audit_scope_detailed", "audit_methodology"]
-    missing_fields = [field for field in required_fields if not initiation_data.get(field)]
-    logger.info(f"Missing fields: {missing_fields}")
-    if missing_fields:
-        raise HTTPException(status_code=400, detail=f"Missing required fields: {', '.join(missing_fields)}")
+    # No status validation - allow updates at any time
     
     try:
         # Update audit with initiation data
         for key, value in initiation_data.items():
-            if hasattr(audit, key) and value:  # Skip empty values
+            if hasattr(audit, key):  # Allow all values including empty ones
                 setattr(audit, key, value)
         
-        # Mark initiation as completed and move to next phase
-        audit.initiation_completed = True
-        audit.status = AuditStatus.INITIATED
+        # Mark initiation as completed and move to next phase (only if not already completed and has required data)
+        if not audit.initiation_completed:
+            # Check if minimum required fields are present
+            if (audit.audit_objectives and audit.audit_criteria and 
+                audit.audit_scope_detailed and audit.audit_methodology):
+                audit.initiation_completed = True
+                if audit.status == AuditStatus.PLANNED:
+                    audit.status = AuditStatus.INITIATED
         
         db.commit()
         db.refresh(audit)
         
         return {
             "success": True, 
-            "message": "Audit initiation completed per ISO 19011 Clause 6.2",
+            "message": "Audit initiation updated successfully",
             "audit_id": str(audit.id),
             "status": audit.status.value if hasattr(audit.status, 'value') else str(audit.status)
         }
     except Exception as e:
         db.rollback()
-        logger.error(f"Error during audit initiation: {str(e)}")
+        logger.error(f"Error during audit initiation update: {str(e)}")
         import traceback
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=400, detail=f"Failed to initiate audit: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to update audit initiation: {str(e)}")
 
 @router.post("/{audit_id}/assign-team")
 def assign_audit_team(
