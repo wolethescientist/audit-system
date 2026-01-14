@@ -102,6 +102,31 @@ def update_audit(
     db.refresh(audit)
     return audit
 
+@router.patch("/{audit_id}/status")
+def update_audit_status(
+    audit_id: UUID,
+    status: AuditStatus,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.SYSTEM_ADMIN, UserRole.AUDIT_MANAGER]))
+):
+    """
+    Update audit status - allows manual progression through workflow stages
+    """
+    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    
+    audit.status = status
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "success": True,
+        "message": f"Audit status updated to {status.value}",
+        "audit_id": str(audit.id),
+        "status": status.value
+    }
+
 # Audit Team
 @router.post("/{audit_id}/team", response_model=AuditTeamResponse)
 def add_team_member(
