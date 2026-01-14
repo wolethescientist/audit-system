@@ -324,7 +324,14 @@ export default function AuditInitiatePage() {
                 onValueChange={(value) => handleInputChange('auditee_contact_person_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select contact person" />
+                  <SelectValue placeholder="Select contact person">
+                    {initiationData.auditee_contact_person_id && users.length > 0 ? (
+                      (() => {
+                        const selectedUser = users.find(u => u.id === initiationData.auditee_contact_person_id);
+                        return selectedUser ? `${selectedUser.full_name} (${selectedUser.email})` : 'Select contact person';
+                      })()
+                    ) : 'Select contact person'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
