@@ -44,6 +44,12 @@ export default function AuditTeamPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Create a mapping of user IDs to display names
+  const userDisplayMap = users.reduce((acc, user) => {
+    acc[user.id] = user.full_name;
+    return acc;
+  }, {} as Record<string, string>);
+
   useEffect(() => {
     fetchAuditDetails();
     fetchUsers();
@@ -285,7 +291,9 @@ export default function AuditTeamPage() {
                 onValueChange={handleLeadAuditorChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select lead auditor" />
+                  <SelectValue placeholder="Select lead auditor">
+                    {userDisplayMap[teamAssignment.lead_auditor_id] || 'Select lead auditor'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {users.filter(user => user.role === 'audit_manager' || user.role === 'auditor').map((user) => (
@@ -327,7 +335,9 @@ export default function AuditTeamPage() {
                     onValueChange={(value) => updateTeamMember(index, 'user_id', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select team member" />
+                      <SelectValue placeholder="Select team member">
+                        {userDisplayMap[member.user_id] || 'Select team member'}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {getAvailableUsers(member.user_id).map((user) => (

@@ -71,6 +71,12 @@ export default function AuditInitiatePage() {
     return acc;
   }, {} as Record<string, string>);
 
+  // Create a mapping of programme IDs to display names
+  const programmeDisplayMap = programmes.reduce((acc, programme) => {
+    acc[programme.id] = `${programme.programme_name} (${programme.programme_year})`;
+    return acc;
+  }, {} as Record<string, string>);
+
   useEffect(() => {
     fetchAuditDetails();
     fetchInitiationStatus();
@@ -372,7 +378,9 @@ export default function AuditInitiatePage() {
                 onValueChange={(value) => handleInputChange('audit_programme_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select audit programme" />
+                  <SelectValue placeholder="Select audit programme">
+                    {programmeDisplayMap[initiationData.audit_programme_id] || 'Select audit programme'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {programmes.map((programme) => (
@@ -391,7 +399,11 @@ export default function AuditInitiatePage() {
                 onValueChange={(value) => handleInputChange('audit_priority', value)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select priority">
+                    {initiationData.audit_priority ? 
+                      initiationData.audit_priority.charAt(0).toUpperCase() + initiationData.audit_priority.slice(1) 
+                      : 'Select priority'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
