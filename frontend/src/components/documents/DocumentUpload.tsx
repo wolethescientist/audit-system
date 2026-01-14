@@ -86,6 +86,12 @@ export default function DocumentUpload({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   
+  // Create a mapping of department IDs to names
+  const departmentDisplayMap = departments.reduce((acc, dept) => {
+    acc[dept.id] = dept.name;
+    return acc;
+  }, {} as Record<string, string>);
+  
   const [formData, setFormData] = useState<DocumentUploadType>({
     document_name: '',
     document_type: '',
@@ -404,7 +410,11 @@ export default function DocumentUpload({
               onValueChange={(value) => handleInputChange('department_id', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <SelectValue placeholder="Select department">
+                  {formData.department_id && departmentDisplayMap[formData.department_id] 
+                    ? departmentDisplayMap[formData.department_id]
+                    : 'Select department'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (

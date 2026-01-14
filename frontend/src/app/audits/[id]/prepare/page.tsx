@@ -67,6 +67,12 @@ export default function AuditPreparePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Create a mapping of user IDs to display names
+  const userDisplayMap = users.reduce((acc, user) => {
+    acc[user.id] = `${user.full_name} (${user.email})`;
+    return acc;
+  }, {} as Record<string, string>);
+
   // Form states
   const [newDocRequest, setNewDocRequest] = useState<DocumentRequest>({
     document_name: '',
@@ -543,7 +549,11 @@ export default function AuditPreparePage() {
                       }))}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {newDocRequest.document_type ? 
+                            newDocRequest.document_type.charAt(0).toUpperCase() + newDocRequest.document_type.slice(1) 
+                            : 'Select type'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="policy">Policy</SelectItem>
@@ -565,7 +575,9 @@ export default function AuditPreparePage() {
                       }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select person" />
+                        <SelectValue placeholder="Select person">
+                          {userDisplayMap[newDocRequest.requested_from_id] || 'Select person'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {users.map((user) => (

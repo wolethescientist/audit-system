@@ -46,6 +46,12 @@ export default function UsersPage() {
     },
   });
 
+  // Create a mapping of department IDs to names
+  const departmentDisplayMap = (departments || []).reduce((acc: Record<string, string>, dept: any) => {
+    acc[dept.id] = dept.name;
+    return acc;
+  }, {} as Record<string, string>);
+
   const createUserMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await api.post('/users/', data);
@@ -281,7 +287,13 @@ export default function UsersPage() {
                   onValueChange={(value) => setFormData({ ...formData, department_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department (optional)" />
+                    <SelectValue placeholder="Select department (optional)">
+                      {formData.department_id && departmentDisplayMap[formData.department_id] 
+                        ? departmentDisplayMap[formData.department_id]
+                        : formData.department_id === '' 
+                        ? 'No Department' 
+                        : 'Select department (optional)'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">No Department</SelectItem>

@@ -82,6 +82,12 @@ export default function AuditExecutePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Create a mapping of user IDs to display names
+  const userDisplayMap = users.reduce((acc, user) => {
+    acc[user.id] = `${user.full_name} (${user.email})`;
+    return acc;
+  }, {} as Record<string, string>);
+
   // Form states
   const [newInterview, setNewInterview] = useState<InterviewNote>({
     interview_title: '',
@@ -518,7 +524,9 @@ export default function AuditExecutePage() {
                       }))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select interviewee" />
+                        <SelectValue placeholder="Select interviewee">
+                          {userDisplayMap[newInterview.interviewee_id] || 'Select interviewee'}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {users.map((user) => (
