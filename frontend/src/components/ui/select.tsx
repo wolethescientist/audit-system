@@ -75,16 +75,21 @@ SelectTrigger.displayName = "SelectTrigger";
 
 interface SelectValueProps extends React.HTMLAttributes<HTMLSpanElement> {
   placeholder?: string;
+  children?: React.ReactNode;
 }
 
 const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
-  ({ className, placeholder, ...props }, ref) => {
+  ({ className, placeholder, children, ...props }, ref) => {
     const context = React.useContext(SelectContext);
     if (!context) throw new Error("SelectValue must be used within Select");
 
+    // If children are provided and there's a value, render children
+    // Otherwise fall back to displaying the value or placeholder
+    const displayValue = children && context.value ? children : (context.value || placeholder);
+
     return (
       <span ref={ref} className={cn("block truncate", className)} {...props}>
-        {context.value || placeholder}
+        {displayValue}
       </span>
     );
   }

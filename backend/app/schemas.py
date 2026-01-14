@@ -150,6 +150,37 @@ class AuditResponse(AuditBase):
     created_by_id: UUID
     created_at: datetime
     
+    # ISO 19011 Clause 6.2 - Audit Initiation Fields
+    audit_objectives: Optional[str] = None
+    audit_criteria: Optional[str] = None
+    audit_scope_detailed: Optional[str] = None
+    audit_methodology: Optional[str] = None
+    
+    # ISO 19011 Clause 5 - Audit Programme Integration
+    audit_programme_id: Optional[UUID] = None
+    risk_based_selection: Optional[bool] = False
+    audit_priority: Optional[str] = "medium"
+    
+    # ISO 19011 Clause 6.2 - Audit Team Assignment
+    lead_auditor_id: Optional[UUID] = None
+    audit_team_competency_verified: Optional[bool] = False
+    
+    # ISO 19011 Clause 6.2 - Auditee Information
+    auditee_organization: Optional[str] = None
+    auditee_contact_person_id: Optional[UUID] = None
+    auditee_location: Optional[str] = None
+    
+    # ISO 19011 Clause 6.2 - Audit Feasibility
+    feasibility_confirmed: Optional[bool] = False
+    feasibility_notes: Optional[str] = None
+    
+    # ISO 19011 Workflow Status Tracking
+    initiation_completed: Optional[bool] = False
+    preparation_completed: Optional[bool] = False
+    execution_completed: Optional[bool] = False
+    reporting_completed: Optional[bool] = False
+    followup_completed: Optional[bool] = False
+    
     class Config:
         from_attributes = True
 
