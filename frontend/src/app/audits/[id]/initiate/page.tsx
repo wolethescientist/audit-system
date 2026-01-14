@@ -65,6 +65,12 @@ export default function AuditInitiatePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Create a mapping of user IDs to display names
+  const userDisplayMap = users.reduce((acc, user) => {
+    acc[user.id] = `${user.full_name} (${user.email})`;
+    return acc;
+  }, {} as Record<string, string>);
+
   useEffect(() => {
     fetchAuditDetails();
     fetchInitiationStatus();
@@ -325,12 +331,7 @@ export default function AuditInitiatePage() {
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select contact person">
-                    {initiationData.auditee_contact_person_id && users.length > 0 ? (
-                      (() => {
-                        const selectedUser = users.find(u => u.id === initiationData.auditee_contact_person_id);
-                        return selectedUser ? `${selectedUser.full_name} (${selectedUser.email})` : 'Select contact person';
-                      })()
-                    ) : 'Select contact person'}
+                    {userDisplayMap[initiationData.auditee_contact_person_id] || 'Select contact person'}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
