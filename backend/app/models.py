@@ -42,7 +42,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
     full_name = Column(String, nullable=False)
-    role = Column(Enum(UserRole), nullable=False)
+    role = Column(Enum(UserRole, values_callable=lambda e: [x.value for x in e]), nullable=False)
     department_id = Column(UUID(as_uuid=True), ForeignKey("departments.id"))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
