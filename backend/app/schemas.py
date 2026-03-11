@@ -665,13 +665,13 @@ class CAPAResponse(BaseModel):
     due_date: Optional[datetime]
     target_completion_date: Optional[datetime]
     actual_completion_date: Optional[datetime]
-    priority: str
-    progress_percentage: int
-    estimated_cost: Optional[float]
-    actual_cost: Optional[float]
-    created_by_id: UUID
-    created_at: datetime
-    updated_at: datetime
+    priority: Optional[str] = None
+    progress_percentage: Optional[int] = 0
+    estimated_cost: Optional[float] = None
+    actual_cost: Optional[float] = None
+    created_by_id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -685,8 +685,8 @@ class CAPADetailResponse(CAPAResponse):
     root_cause_method: Optional[str]
     verification_method: Optional[str]
     verification_evidence: Optional[str]
-    effectiveness_review_date: Optional[datetime]
-    effectiveness_confirmed: bool
+    effectiveness_review_date: Optional[datetime] = None
+    effectiveness_confirmed: Optional[bool] = False
     effectiveness_notes: Optional[str]
     approved_by_id: Optional[UUID]
     closed_by_id: Optional[UUID]
@@ -715,7 +715,7 @@ class CAPAOverdueResponse(BaseModel):
     assigned_to_id: Optional[UUID]
     due_date: Optional[datetime]
     days_overdue: int
-    priority: str
+    priority: Optional[str] = None
     status: CAPAStatus
     
     class Config:
