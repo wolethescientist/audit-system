@@ -16,7 +16,7 @@ from typing import List, Tuple, Optional
 class TOTPService:
     """Service for managing TOTP-based two-factor authentication"""
     
-    ISSUER_NAME = "Galaxy Audit System"
+    ISSUER_NAME = "Hikey Audit Management System"
     BACKUP_CODE_COUNT = 10
     BACKUP_CODE_LENGTH = 8
     

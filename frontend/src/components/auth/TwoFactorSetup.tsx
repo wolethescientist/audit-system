@@ -135,12 +135,12 @@ export default function TwoFactorSetup({ onClose, onSuccess }: TwoFactorSetupPro
 
   const downloadBackupCodes = () => {
     if (setupData?.backup_codes) {
-      const content = `Galaxy Audit System - 2FA Backup Codes\n\nKeep these codes safe. Each code can only be used once.\n\n${setupData.backup_codes.join('\n')}\n\nGenerated: ${new Date().toISOString()}`;
+      const content = `Hikey Audit Management System - 2FA Backup Codes\n\nKeep these codes safe. Each code can only be used once.\n\n${setupData.backup_codes.join('\n')}\n\nGenerated: ${new Date().toISOString()}`;
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'galaxy-audit-2fa-backup-codes.txt';
+      a.download = 'hikey-audit-2fa-backup-codes.txt';
       a.click();
       URL.revokeObjectURL(url);
     }

@@ -202,15 +202,8 @@ export default function Sidebar() {
     <div className="w-64 bg-gradient-to-b from-gray-900 to-gray-800 min-h-screen flex flex-col shadow-2xl">
       <div className="p-6 border-b border-gray-700">
         <div className="flex flex-col items-center mb-4">
-          <div className="bg-white rounded-xl p-3 mb-3 shadow-lg">
-            <img 
-              src="/galaxy logo.png" 
-              alt="Galaxy Logo" 
-              className="h-12 w-auto object-contain"
-            />
-          </div>
           <div className="text-center">
-            <h1 className="text-lg font-bold text-white">Audit System</h1>
+            <h1 className="text-lg font-bold text-white">Hikey Audit Management System</h1>
             <p className="text-xs text-gray-400">Enterprise</p>
           </div>
         </div>

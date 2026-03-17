@@ -112,11 +112,6 @@ export default function LoginPage() {
       <div className="glass-card max-w-md w-full relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-6">
-            <img 
-              src="/galaxy logo.png" 
-              alt="Galaxy Logo" 
-              className="h-24 w-auto object-contain"
-            />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent mb-2">
             {requires2FA ? 'Two-Factor Authentication' : 'Welcome Back'}
@@ -239,7 +234,7 @@ export default function LoginPage() {
       {/* Footer */}
       <div className="fixed bottom-0 left-0 right-0 z-10 bg-gray-900/80 backdrop-blur-sm py-3">
         <p className="text-center text-sm text-gray-300">
-          © 2025 Galaxy Backbone Limited
+          © 2025 Hikey Audit Management System
         </p>
       </div>
     </div>
